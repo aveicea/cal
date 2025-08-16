@@ -2,103 +2,86 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>구글 캘린더 뷰어</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>멀티 구글 캘린더 뷰어 (노션 임베드용)</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f9f9f9; }
+  #calendar { max-width: 900px; margin: 20px auto; }
+  #controls { text-align:center; margin: 10px; }
+  input, button { padding: 8px; margin: 5px; width: 80%; max-width:400px; }
+</style>
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ical.js@1.4.0/build/ical.min.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  #calendar { max-width: 900px; margin: 0 auto; }
-  #controls { margin-bottom: 20px; }
-  input, select, button { margin-right: 10px; padding: 5px; }
-  #calendarList { margin-top: 10px; }
-  .calendar-item { margin-bottom: 5px; }
-  .calendar-item button { margin-left: 10px; }
-</style>
 </head>
 <body>
-
 <div id="controls">
-  <input type="text" id="icsUrl" placeholder="ICS URL 입력">
-  <input type="color" id="colorPicker" value="#3788d8">
-  <button id="addCalendar">캘린더 추가</button>
-  <div id="calendarList"></div>
+  <input type="text" id="ics-url" placeholder="ICS URL 입력 후 Enter">
+  <button id="add-calendar">캘린더 추가</button>
 </div>
-
 <div id="calendar"></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const calendarEl = document.getElementById('calendar');
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    height: 700,
-    eventSources: []
+const calendarEl = document.getElementById('calendar');
+const calendar = new FullCalendar.Calendar(calendarEl, {
+  initialView: 'dayGridMonth',
+  height: 'auto',
+  events: []
+});
+calendar.render();
+
+const corsProxy = 'https://cors-anywhere.herokuapp.com/'; // CORS 프록시
+const colorPalette = ['#f94144','#f3722c','#f9c74f','#90be6d','#43aa8b','#577590','#b56576'];
+let colorIndex = 0;
+
+async function fetchICS(url) {
+  try {
+    const res = await fetch(corsProxy + url);
+    if (!res.ok) throw new Error('ICS fetch 실패');
+    const text = await res.text();
+    return ICAL.parse(text);
+  } catch(e) {
+    alert('ICS 불러오기 실패: ' + e.message);
+    return null;
+  }
+}
+
+function parseEvents(icalData, color) {
+  const comp = new ICAL.Component(icalData);
+  const vevents = comp.getAllSubcomponents('vevent');
+  return vevents.map(ve => {
+    const event = new ICAL.Event(ve);
+    return {
+      title: event.summary,
+      start: event.startDate.toString(),
+      end: event.endDate.toString(),
+      color: color
+    };
   });
-  calendar.render();
+}
 
-  const calendars = []; // 추가된 캘린더 목록 저장
+async function addCalendar(url) {
+  const icalData = await fetchICS(url);
+  if (!icalData) return;
+  const color = colorPalette[colorIndex % colorPalette.length];
+  colorIndex++;
+  const events = parseEvents(icalData, color);
+  events.forEach(ev => calendar.addEvent(ev));
+}
 
-  async function addICS(url, color) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('ICS 불러오기 실패');
-      const text = await res.text();
-      const jcal = ICAL.parse(text);
-      const comp = new ICAL.Component(jcal);
-      const vevents = comp.getAllSubcomponents('vevent');
+document.getElementById('add-calendar').addEventListener('click', () => {
+  const url = document.getElementById('ics-url').value.trim();
+  if (url) addCalendar(url);
+  document.getElementById('ics-url').value = '';
+});
 
-      const events = vevents.map(event => {
-        const e = new ICAL.Event(event);
-        return {
-          title: e.summary,
-          start: e.startDate.toJSDate(),
-          end: e.endDate.toJSDate(),
-          allDay: e.startDate.isDate,
-          color: color
-        };
-      });
-
-      const source = calendar.addEventSource(events);
-      calendars.push({ url, color, source });
-      renderCalendarList();
-    } catch (err) {
-      alert('ICS 로드 실패: ' + err.message);
-    }
+document.getElementById('ics-url').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const url = e.target.value.trim();
+    if (url) addCalendar(url);
+    e.target.value = '';
   }
-
-  function removeCalendar(index) {
-    const cal = calendars[index];
-    cal.source.remove();
-    calendars.splice(index, 1);
-    renderCalendarList();
-  }
-
-  function renderCalendarList() {
-    const listEl = document.getElementById('calendarList');
-    listEl.innerHTML = '';
-    calendars.forEach((cal, idx) => {
-      const div = document.createElement('div');
-      div.className = 'calendar-item';
-      div.innerHTML = `<span style="color:${cal.color}">●</span> ${cal.url} 
-                       <button onclick="removeCalendar(${idx})">삭제</button>`;
-      listEl.appendChild(div);
-    });
-  }
-
-  // removeCalendar 함수 외부에서도 호출 가능하게
-  window.removeCalendar = removeCalendar;
-
-  document.getElementById('addCalendar').addEventListener('click', function() {
-    const url = document.getElementById('icsUrl').value.trim();
-    const color = document.getElementById('colorPicker').value;
-    if (url) {
-      addICS(url, color);
-      document.getElementById('icsUrl').value = '';
-    }
-  });
 });
 </script>
-
 </body>
 </html>
