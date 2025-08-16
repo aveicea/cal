@@ -438,11 +438,18 @@
       <div class="api-key-section">
         <div class="color-picker-title">구글 캘린더 임베드</div>
         <div class="input-group">
-          <label>캘린더 임베드 URL</label>
-          <input type="text" id="calendarUrl" placeholder="구글 캘린더 임베드 URL을 입력하세요">
+          <label>iCal 캘린더 링크</label>
+          <input type="text" id="calendarUrl" placeholder="구글 캘린더 iCal 링크를 입력하세요 (예: .ics 파일 링크)">
         </div>
-        <button class="btn btn-primary" onclick="loadEmbeddedCalendar()">캘린더 추가</button>
+        <button class="btn btn-primary" onclick="addSubscribedCalendar()">캘린더 구독 추가</button>
         <button class="btn btn-secondary" onclick="showSampleData()">샘플 데이터 보기</button>
+      </div>
+      
+      <div class="subscribed-calendars-section">
+        <div class="color-picker-title">구독된 캘린더</div>
+        <div id="subscribedCalendarsList">
+          <!-- 구독된 캘린더들이 여기에 표시됩니다 -->
+        </div>
       </div>
     </div>
   </div>
@@ -470,6 +477,9 @@
   let accentHoverColor = '#3367d6';
   let calendarEvents = [];
   
+  // 구독된 캘린더 목록
+  let subscribedCalendars = [];
+  
   // DOM 요소
   const settingsPanel = document.getElementById("settingsPanel");
   const overlay = document.getElementById("overlay");
@@ -479,8 +489,9 @@
   const calendarContent = document.getElementById("calendarContent");
   
   // 초기화
-  function init() {
+  async function init() {
     loadFromStorage();
+    await loadSubscribedCalendars();
     updateCurrentDateDisplay();
     setAccentColor(accentColor);
   }
@@ -642,6 +653,12 @@
         eventDiv.className = 'event';
         eventDiv.textContent = event.title;
         eventDiv.title = event.title + '\n' + event.time;
+        
+        // 구독 캘린더 이벤트는 다른 색상으로 표시
+        if (event.calendarId && event.color) {
+          eventDiv.style.backgroundColor = event.color;
+        }
+        
         cell.appendChild(eventDiv);
       });
       
@@ -899,6 +916,274 @@
     }
   }
   
+  // 구독 캘린더 추가
+  function addSubscribedCalendar() {
+    const url = document.getElementById('calendarUrl').value.trim();
+    
+    if (!url) {
+      alert('iCal 캘린더 링크를 입력해주세요.');
+      return;
+    }
+  
+    if (!url.includes('.ics') && !url.includes('ical')) {
+      alert('올바른 iCal 캘린더 링크를 입력해주세요. (.ics 파일 링크여야 합니다)');
+      return;
+    }
+    
+    try {
+      // URL 유효성 검사
+      new URL(url);
+      
+      // 중복 체크
+      if (subscribedCalendars.some(cal => cal.url === url)) {
+        alert('이미 구독된 캘린더입니다.');
+        return;
+      }
+      
+      // 새 캘린더 추가
+      const newCalendar = {
+        id: Date.now(),
+        url: url,
+        name: `구독 캘린더 ${subscribedCalendars.length + 1}`,
+        enabled: true,
+        color: getRandomColor()
+      };
+      
+      subscribedCalendars.push(newCalendar);
+      document.getElementById('calendarUrl').value = '';
+      
+      // UI 업데이트
+      updateSubscribedCalendarsList();
+      loadSubscribedCalendarEvents(newCalendar);
+      saveSubscribedCalendars();
+      
+    } catch (error) {
+      alert('올바른 URL 형식이 아닙니다.');
+    }
+  }
+  
+  // 랜덤 색상 생성
+  function getRandomColor() {
+    const colors = ['#4285f4', '#34a853', '#ea4335', '#fbbc04', '#9c27b0', '#ff6d00', '#607d8b', '#795548', '#e91e63', '#00bcd4'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+  
+  // 구독된 캘린더 목록 UI 업데이트
+  function updateSubscribedCalendarsList() {
+    const container = document.getElementById('subscribedCalendarsList');
+    container.innerHTML = '';
+    
+    if (subscribedCalendars.length === 0) {
+      container.innerHTML = '<p style="color: #666; font-size: 12px; text-align: center;">구독된 캘린더가 없습니다.</p>';
+      return;
+    }
+    
+    subscribedCalendars.forEach(calendar => {
+      const calendarItem = document.createElement('div');
+      calendarItem.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;';
+      
+      const toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.checked = calendar.enabled;
+      toggle.onchange = () => toggleCalendar(calendar.id);
+      
+      const colorDot = document.createElement('div');
+      colorDot.style.cssText = `width: 12px; height: 12px; border-radius: 50%; background-color: ${calendar.color};`;
+      
+      const name = document.createElement('span');
+      name.textContent = calendar.name;
+      name.style.cssText = 'flex: 1; font-size: 12px;';
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '삭제';
+      deleteBtn.className = 'btn btn-secondary';
+      deleteBtn.style.cssText = 'padding: 2px 6px; font-size: 10px;';
+      deleteBtn.onclick = () => removeCalendar(calendar.id);
+      
+      calendarItem.appendChild(toggle);
+      calendarItem.appendChild(colorDot);
+      calendarItem.appendChild(name);
+      calendarItem.appendChild(deleteBtn);
+      container.appendChild(calendarItem);
+    });
+  }
+  
+  // 캘린더 토글 (켜기/끄기)
+  function toggleCalendar(calendarId) {
+    const calendar = subscribedCalendars.find(cal => cal.id === calendarId);
+    if (calendar) {
+      calendar.enabled = !calendar.enabled;
+      updateSubscribedCalendarsList();
+      loadAllSubscribedEvents();
+      saveSubscribedCalendars();
+    }
+  }
+  
+  // 캘린더 제거
+  function removeCalendar(calendarId) {
+    if (confirm('정말로 이 캘린더를 제거하시겠습니까?')) {
+      subscribedCalendars = subscribedCalendars.filter(cal => cal.id !== calendarId);
+      updateSubscribedCalendarsList();
+      loadAllSubscribedEvents();
+      saveSubscribedCalendars();
+    }
+  }
+  
+  // 구독 캘린더 이벤트 로드
+  async function loadSubscribedCalendarEvents(calendar) {
+    try {
+      // iCal 파일에서 이벤트 데이터 가져오기
+      const response = await fetch(calendar.url);
+      const icsData = await response.text();
+      
+      // iCal 데이터 파싱
+      const events = parseICalData(icsData, calendar);
+      
+      // 기존 이벤트에 추가
+      calendarEvents = calendarEvents.concat(events);
+      
+      // 캘린더 다시 렌더링
+      renderCalendar();
+      
+    } catch (error) {
+      console.error('구독 캘린더 이벤트 로드 오류:', error);
+      alert('캘린더 이벤트를 불러올 수 없습니다. 링크를 확인해주세요.');
+    }
+  }
+  
+  // iCal 데이터 파싱 함수
+  function parseICalData(icsData, calendar) {
+    const events = [];
+    const lines = icsData.split('\n');
+    
+    let currentEvent = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line === 'BEGIN:VEVENT') {
+        currentEvent = {
+          calendarId: calendar.id,
+          color: calendar.color
+        };
+      } else if (line === 'END:VEVENT') {
+        if (currentEvent && currentEvent.title && currentEvent.date) {
+          events.push(currentEvent);
+        }
+        currentEvent = null;
+      } else if (currentEvent) {
+        if (line.startsWith('SUMMARY:')) {
+          currentEvent.title = line.substring(8);
+        } else if (line.startsWith('DTSTART:')) {
+          const dateStr = line.substring(8);
+          const date = parseICalDate(dateStr);
+          currentEvent.date = date.toISOString().split('T')[0];
+          
+          // 시간이 포함된 경우
+          if (dateStr.length > 8) {
+            currentEvent.time = date.toLocaleTimeString('ko-KR', { 
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false 
+            });
+          } else {
+            currentEvent.time = '종일';
+          }
+        } else if (line.startsWith('DESCRIPTION:')) {
+          currentEvent.description = line.substring(12);
+        }
+      }
+    }
+    
+    return events;
+  }
+  
+  // iCal 날짜 파싱
+  function parseICalDate(dateStr) {
+    // iCal 형식: 20241201T090000Z 또는 20241201
+    if (dateStr.includes('T')) {
+      // 날짜와 시간이 모두 포함된 경우
+      const year = parseInt(dateStr.substring(0, 4));
+      const month = parseInt(dateStr.substring(4, 6)) - 1;
+      const day = parseInt(dateStr.substring(6, 8));
+      const hour = parseInt(dateStr.substring(9, 11));
+      const minute = parseInt(dateStr.substring(11, 13));
+      const second = parseInt(dateStr.substring(13, 15));
+      
+      return new Date(year, month, day, hour, minute, second);
+    } else {
+      // 날짜만 포함된 경우
+      const year = parseInt(dateStr.substring(0, 4));
+      const month = parseInt(dateStr.substring(4, 6)) - 1;
+      const day = parseInt(dateStr.substring(6, 8));
+      
+      return new Date(year, month, day);
+    }
+  }
+  
+  // 구독 캘린더용 샘플 이벤트 생성
+  function generateSampleEventsForCalendar(calendar) {
+    const events = [];
+    const today = new Date();
+    
+    // 이번 달의 샘플 이벤트들
+    for (let i = 0; i < 5; i++) {
+      const eventDate = new Date(today.getFullYear(), today.getMonth(), Math.floor(Math.random() * 28) + 1);
+      const hour = Math.floor(Math.random() * 10) + 9;
+      const minute = Math.random() > 0.5 ? '00' : '30';
+      
+      const sampleTitles = [
+        `${calendar.name} - 회의`, `${calendar.name} - 미팅`, `${calendar.name} - 프로젝트`,
+        `${calendar.name} - 워크숍`, `${calendar.name} - 교육`
+      ];
+      
+      events.push({
+        title: sampleTitles[Math.floor(Math.random() * sampleTitles.length)],
+        date: eventDate.toISOString().split('T')[0],
+        time: `${hour}:${minute}`,
+        calendarId: calendar.id,
+        color: calendar.color
+      });
+    }
+    
+    return events;
+  }
+  
+  // 모든 구독 캘린더 이벤트 로드
+  async function loadAllSubscribedEvents() {
+    // 기존 구독 캘린더 이벤트 제거
+    calendarEvents = calendarEvents.filter(event => !event.calendarId);
+    
+    // 활성화된 구독 캘린더들의 이벤트 로드
+    for (const calendar of subscribedCalendars.filter(cal => cal.enabled)) {
+      try {
+        const response = await fetch(calendar.url);
+        const icsData = await response.text();
+        const events = parseICalData(icsData, calendar);
+        calendarEvents = calendarEvents.concat(events);
+      } catch (error) {
+        console.error(`캘린더 ${calendar.name} 로드 오류:`, error);
+      }
+    }
+    
+    renderCalendar();
+  }
+  
+  // 구독된 캘린더 저장
+  function saveSubscribedCalendars() {
+    localStorage.setItem('subscribedCalendars', JSON.stringify(subscribedCalendars));
+  }
+  
+  // 구독된 캘린더 불러오기
+  async function loadSubscribedCalendars() {
+    const saved = localStorage.getItem('subscribedCalendars');
+    if (saved) {
+      subscribedCalendars = JSON.parse(saved);
+      updateSubscribedCalendarsList();
+      await loadAllSubscribedEvents();
+    }
+  }
+  
   // 저장/불러오기
   function saveToStorage() {
     const data = JSON.stringify({
@@ -981,7 +1266,7 @@
   
   document.getElementById('calendarUrl').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
-      loadEmbeddedCalendar();
+      addSubscribedCalendar();
     }
   });
 </script>
