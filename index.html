@@ -429,7 +429,6 @@ body {
 
 .calendar-day.today {
   background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
-  color: white;  /* 추가 - 글씨색을 흰색으로 */
 }
 
 .day-number {
@@ -445,7 +444,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: white;
+  color: #333;
   cursor: pointer;
   max-width: 100%;  /* 추가 */
   display: block;  /* 추가 */
@@ -516,7 +515,7 @@ body {
 
 .week-header.today {
   background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
-  color: white;  /* 기존: var(--accent-color, #4285f4) */
+  color: var(--accent-color, #4285f4);  /* 다시 원래대로 */
   font-weight: 600;
 }
 
@@ -533,7 +532,7 @@ body {
   right: 4px;
   border-radius: 4px;
   padding: 2px 6px;
-  color: white;
+  color: #333;
   font-weight: 500;
   font-size: 6px;
   overflow: hidden;
@@ -559,7 +558,7 @@ body {
   line-height: 18px;
   border-radius: 3px;
   padding: 0 6px;
-  color: white;
+  color: #333;
   font-weight: 500;
   font-size: 8px;
   overflow: hidden;
@@ -1744,7 +1743,7 @@ function renderWeekView() {
           const eventDiv = document.createElement('div');
           eventDiv.className = 'all-day-event';
           eventDiv.style.backgroundColor = event.color;
-          eventDiv.style.color = 'white';
+          eventDiv.style.color = '#333';
           eventDiv.style.padding = '4px 8px';
           eventDiv.style.fontSize = '0.6em';
           eventDiv.style.borderRadius = '6px';
@@ -1857,7 +1856,7 @@ function renderWeekView() {
             const eventDiv = document.createElement('div');
             eventDiv.className = 'time-event';
             eventDiv.style.backgroundColor = event.color;
-            eventDiv.style.color = 'white';
+            eventDiv.style.color = '#333';
             eventDiv.style.padding = '2px 6px';
             eventDiv.style.fontSize = '0.6em';
             eventDiv.style.overflow = 'hidden';
@@ -1932,7 +1931,6 @@ function renderDayView() {
   const today = new Date();
   if (currentDate.toDateString() === today.toDateString()) {
     dayHeader.style.backgroundColor = accentColor;  // 기존: '#e3f2fd'
-    dayHeader.style.color = 'white';                // 추가
   } else {
     dayHeader.style.backgroundColor = '#f5f5f5';
   }
@@ -1998,7 +1996,7 @@ function renderDayView() {
         const eventDiv = document.createElement('div');
         eventDiv.className = 'all-day-event';
         eventDiv.style.backgroundColor = event.color;
-        eventDiv.style.color = 'white';
+        eventDiv.style.color = '#333';
         eventDiv.style.padding = '4px 8px';
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.borderRadius = '6px';
@@ -2033,7 +2031,7 @@ function renderDayView() {
         const eventDiv = document.createElement('div');
         eventDiv.className = 'time-event';
         eventDiv.style.backgroundColor = event.color;
-        eventDiv.style.color = 'white';
+        eventDiv.style.color = '#333';
         eventDiv.style.padding = '2px 6px';
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.overflow = 'hidden';
