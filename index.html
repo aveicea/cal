@@ -1908,16 +1908,16 @@ function renderWeekView() {
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '500px';
+  container.style.height = '600px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `50px 1fr`;
-  grid.style.gridTemplateRows = `30px repeat(18, 25px)`;
+  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = '450px'; 
+  grid.style.height = '550px'; 
 
   // 헤더들 (이전과 동일)
   const timeHeader = document.createElement('div');
