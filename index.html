@@ -1352,6 +1352,18 @@ function parseIcalData(icalText) {
             currentEvent.rrule = value;
             addDebugLog(`RRULE 파싱됨: ${value}`);
             break;
+
+            // parseIcalData 함수에서 EXDATE 처리 추가
+          case 'EXDATE':
+            if (!currentEvent.exdate) currentEvent.exdate = [];
+            currentEvent.exdate.push(parseIcalDate(value));
+            break;
+
+            // parseIcalData에서 RECURRENCE-ID 처리 추가
+          case 'RECURRENCE-ID':
+              currentEvent.recurrenceId = parseIcalDate(value);
+              currentEvent.isException = true;
+              break;
         }
       }
     }
@@ -1718,6 +1730,17 @@ function renderCalendar() {
   } else if (currentView === 'day') {
     renderDayView();
   }
+}
+
+// renderCalendar 함수에서 중복 제거
+function removeDuplicateEvents(events) {
+    const seen = new Set();
+    return events.filter(event => {
+        const key = `${event.title}_${event.date}_${event.startTime}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 // 월간 뷰
