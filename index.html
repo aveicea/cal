@@ -14,6 +14,8 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  max-width: 1200px;  /* 추가 - 전체 최대 가로 크기 */
+  margin: 0 auto;     /* 추가 - 가운데 정렬 */
 }
 
 .header {
@@ -36,11 +38,11 @@ body {
 }
 
 .view-btn {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
   background: white;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #666;
@@ -77,13 +79,13 @@ body {
 }
 
 .current-date {
-  padding: 6px 12px;
+  padding: 6px 10px;
   background: #f8f9fa;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #333;
-  min-width: 120px;
+  min-width: 100px;
   text-align: center;
 }
 
@@ -120,6 +122,8 @@ body {
   display: none;
   max-height: 70vh;
   overflow-y: auto;
+  max-width: calc(100vw - 40px);  /* 추가 - 화면 크기에 맞춤 */
+  box-sizing: border-box;         /* 추가 */
 }
 
 .settings-title {
@@ -401,15 +405,21 @@ body {
   height: calc(100vh - 150px);
   min-height: 250px;
   max-height: 400px;
+  width: 100%;  /* 추가 */
+  table-layout: fixed;  /* 추가 - 고정 레이아웃 */
 }
 
 .calendar-day {
   background: white;
   min-height: 40px;
+  max-height: 120px;  /* 추가 - 최대 높이 제한 */
   padding: 4px;
   position: relative;
   font-size: 11px;
   border: none;
+  overflow: hidden;  /* 추가 - 넘치는 내용 숨김 */
+  width: 100%;  /* 추가 */
+  box-sizing: border-box;  /* 추가 */
 }
 
 .calendar-day.other-month {
@@ -436,6 +446,8 @@ body {
   white-space: nowrap;
   color: white;
   cursor: pointer;
+  max-width: 100%;  /* 추가 */
+  display: block;  /* 추가 */
 }
 
 /* 시간 기반 뷰 개선 */
@@ -447,13 +459,13 @@ body {
 }
 
 .week-view {
-  grid-template-columns: 60px repeat(7, 1fr);
-  grid-template-rows: 35px repeat(18, 25px);
+  grid-template-columns: 50px repeat(7, 1fr);
+  grid-template-rows: 30px repeat(18, 25px);
 }
 
 .day-view {
-  grid-template-columns: 60px 1fr;
-  grid-template-rows: 35px repeat(18, 25px);
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: 30px repeat(18, 25px);
 }
 
 .time-slot {
@@ -616,6 +628,7 @@ body {
     right: 10px;
     left: 10px;
     width: auto;
+    max-width: none;
   }
   .nav-controls {
     margin-right: 10px;
