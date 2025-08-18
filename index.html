@@ -1299,23 +1299,72 @@ function parseIcalData(icalText) {
 }
 
 //반복일정확장함수
-// 더 정확한 반복 일정 확장 함수
-function expandRecurringEvent(event, viewStart, viewEnd) {
-    console.log('Processing event:', event.title, event.rrule);
+function processRecurringEventsWithExceptions(events, viewStart, viewEnd) {
+    const processedEvents = [];
+    const exceptionalEvents = new Map(); // 수정된 개별 인스턴스들
+    const recurringEvents = [];
     
-    if (!event.rrule) {
-        console.log('No rrule found');
-        return [event];
-    }
+    // 이벤트를 반복 이벤트와 예외 이벤트로 분류
+    events.forEach(event => {
+        if (event.recurringEventId) {
+            // 수정된 개별 인스턴스 (원본 반복 일정에서 수정된 것)
+            const originalDate = new Date(event.originalStartTime || event.start);
+            const key = `${event.recurringEventId}_${originalDate.toDateString()}`;
+            exceptionalEvents.set(key, event);
+        } else if (event.rrule) {
+            // 원본 반복 이벤트
+            recurringEvents.push(event);
+        } else {
+            // 일반 단일 이벤트
+            processedEvents.push(event);
+        }
+    });
+    
+    console.log('Exceptional events found:', exceptionalEvents.size);
+    console.log('Recurring events found:', recurringEvents.length);
+    
+    // 반복 이벤트들 처리
+    recurringEvents.forEach(recurringEvent => {
+        const expandedEvents = expandRecurringEventWithExceptions(
+            recurringEvent, 
+            viewStart, 
+            viewEnd, 
+            exceptionalEvents
+        );
+        processedEvents.push(...expandedEvents);
+    });
+    
+    // 예외 이벤트 중 뷰 범위에 있는 것들 추가 (이미 처리되지 않은 것들)
+    exceptionalEvents.forEach((exceptionalEvent, key) => {
+        const eventDate = new Date(exceptionalEvent.start);
+        if (eventDate >= viewStart && eventDate <= viewEnd) {
+            // 중복 체크: 이미 처리된 것이 아닌 경우에만 추가
+            const alreadyProcessed = processedEvents.some(pe => 
+                pe.id === exceptionalEvent.id || 
+                (pe.originalEventId === exceptionalEvent.recurringEventId && 
+                 new Date(pe.start).toDateString() === eventDate.toDateString())
+            );
+            
+            if (!alreadyProcessed) {
+                processedEvents.push({
+                    ...exceptionalEvent,
+                    isException: true
+                });
+            }
+        }
+    });
+    
+    return processedEvents;
+}
+
+function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exceptionalEvents) {
+    console.log('Expanding recurring event:', event.title, event.id);
     
     const occurrences = [];
     const eventStart = new Date(event.start);
-    const eventDuration = new Date(event.end) - new Date(event.start);
+    const eventDuration = new Date(event.end) - eventStart;
     
-    console.log('Event start:', eventStart);
-    console.log('View range:', viewStart, 'to', viewEnd);
-    
-    // RRULE 파싱 개선
+    // RRULE 파싱
     const rrule = event.rrule.replace('RRULE:', '').trim();
     const rules = {};
     rrule.split(';').forEach(part => {
@@ -1325,44 +1374,58 @@ function expandRecurringEvent(event, viewStart, viewEnd) {
         }
     });
     
-    console.log('Parsed rules:', rules);
+    // EXDATE 처리 (제외할 날짜들)
+    const excludedDates = new Set();
+    if (event.exdate) {
+        const exdates = Array.isArray(event.exdate) ? event.exdate : [event.exdate];
+        exdates.forEach(exdate => {
+            const excludeDate = new Date(exdate);
+            excludedDates.add(excludeDate.toDateString());
+        });
+    }
     
-    let current = new Date(eventStart);
+    let current = new Date(eventStart.getTime());
     const maxOccurrences = 100;
     let count = 0;
     
-    // 시작 날짜가 뷰 범위보다 훨씬 이전인 경우, 뷰 시작에 가까운 위치로 이동
-    if (current < viewStart) {
-        const diffDays = Math.floor((viewStart - current) / (1000 * 60 * 60 * 24));
-        if (rules.FREQ === 'DAILY') {
-            const interval = parseInt(rules.INTERVAL) || 1;
-            const steps = Math.floor(diffDays / interval);
-            current.setDate(current.getDate() + (steps * interval));
-        } else if (rules.FREQ === 'WEEKLY') {
-            const interval = parseInt(rules.INTERVAL) || 1;
-            const steps = Math.floor(diffDays / (7 * interval));
-            current.setDate(current.getDate() + (steps * 7 * interval));
-        }
-    }
-    
-    console.log('Starting from:', current);
-    
     while (current <= viewEnd && count < maxOccurrences) {
-        console.log('Checking date:', current);
-        
         if (current >= viewStart) {
-            const occurrence = {
-                ...event,
-                start: new Date(current),
-                end: new Date(current.getTime() + eventDuration),
-                isRecurring: true,
-                id: `${event.id}_${current.getTime()}` // 고유 ID 추가
-            };
-            occurrences.push(occurrence);
-            console.log('Added occurrence:', occurrence.start);
+            const currentDateString = current.toDateString();
+            const exceptionKey = `${event.id}_${currentDateString}`;
+            
+            // 제외된 날짜인지 확인
+            if (!excludedDates.has(currentDateString)) {
+                // 수정된 인스턴스가 있는지 확인
+                if (exceptionalEvents.has(exceptionKey)) {
+                    // 수정된 인스턴스 사용
+                    const exceptionalEvent = exceptionalEvents.get(exceptionKey);
+                    occurrences.push({
+                        ...exceptionalEvent,
+                        isException: true,
+                        originalEventId: event.id
+                    });
+                    console.log('Using exceptional instance for:', currentDateString);
+                } else {
+                    // 원본 반복 인스턴스 사용
+                    const occurrenceStart = new Date(current.getTime());
+                    const occurrenceEnd = new Date(current.getTime() + eventDuration);
+                    
+                    occurrences.push({
+                        ...event,
+                        id: `${event.id}_${current.getTime()}`,
+                        start: occurrenceStart.toISOString(),
+                        end: occurrenceEnd.toISOString(),
+                        isRecurring: true,
+                        originalEventId: event.id
+                    });
+                    console.log('Using original instance for:', currentDateString);
+                }
+            } else {
+                console.log('Excluded date:', currentDateString);
+            }
         }
         
-        // 반복 규칙에 따라 다음 날짜 계산
+        // 다음 반복 날짜 계산
         switch (rules.FREQ) {
             case 'DAILY':
                 const interval = parseInt(rules.INTERVAL) || 1;
@@ -1377,31 +1440,21 @@ function expandRecurringEvent(event, viewStart, viewEnd) {
                 current.setMonth(current.getMonth() + monthInterval);
                 break;
             default:
-                console.log('Unsupported frequency:', rules.FREQ);
+                console.log('Unsupported frequency');
                 return occurrences;
         }
         
         count++;
         
-        // COUNT 제한 체크
-        if (rules.COUNT && count >= parseInt(rules.COUNT)) {
-            console.log('Reached COUNT limit:', rules.COUNT);
-            break;
-        }
-        
-        // UNTIL 날짜 제한 체크
-        if (rules.UNTIL) {
-            const until = new Date(rules.UNTIL.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-            if (current > until) {
-                console.log('Reached UNTIL limit:', until);
-                break;
-            }
-        }
+        // 제한 조건 체크
+        if (rules.COUNT && count >= parseInt(rules.COUNT)) break;
+        if (rules.UNTIL && current > new Date(rules.UNTIL)) break;
     }
     
-    console.log('Generated occurrences:', occurrences.length);
+    console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
     return occurrences;
 }
+
 
 
 
