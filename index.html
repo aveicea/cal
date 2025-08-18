@@ -1230,19 +1230,30 @@ function parseIcalData(icalText) {
     
     if (line === 'BEGIN:VEVENT') {
       currentEvent = {};
-    } else if (line === 'END:VEVENT' && currentEvent) {
+    } 
+// 'END:VEVENT' 처리 부분을 다음과 같이 수정
+    else if (line === 'END:VEVENT' && currentEvent) {
       if (currentEvent.summary && currentEvent.dtstart) {
-        events.push({
+        const baseEvent = {
           title: currentEvent.summary,
           date: currentEvent.date,
           time: currentEvent.time || '종일',
           startTime: currentEvent.startTime || currentEvent.time || '종일',
           endTime: currentEvent.endTime || currentEvent.time || '종일',
           description: currentEvent.description || ''
-        });
+        };
+        
+        events.push(baseEvent);
+        
+        // 반복 일정 처리
+        if (currentEvent.rrule) {
+          const expandedEvents = expandRecurringEvent(baseEvent, currentEvent.rrule);
+          events.push(...expandedEvents);
+        }
       }
       currentEvent = null;
-    } else if (currentEvent) {
+    }
+    else if (currentEvent) {
       const colonIndex = line.indexOf(':');
       if (colonIndex > 0) {
         const key = line.substring(0, colonIndex).split(';')[0];
@@ -1270,12 +1281,59 @@ function parseIcalData(icalText) {
               currentEvent.endTime = endDate.time;
             }
             break;
+            // parseIcalData() 함수의 switch 문에 추가
+          case 'RRULE':
+            currentEvent.rrule = value;
+            break;
         }
       }
     }
   }
   
   addDebugLog(`iCal 파싱 완료: ${events.length}개 이벤트 추출`);
+  return events;
+}
+
+//반복일정확장함수
+function expandRecurringEvent(baseEvent, rrule) {
+  const events = [];
+  const startDate = new Date(baseEvent.date + 'T00:00:00');
+  
+  // 간단한 RRULE 파싱 (FREQ=WEEKLY, FREQ=DAILY 등)
+  const rules = {};
+  rrule.split(';').forEach(rule => {
+    const [key, value] = rule.split('=');
+    rules[key] = value;
+  });
+  
+  if (!rules.FREQ) return events;
+  
+  let interval = parseInt(rules.INTERVAL) || 1;
+  let count = parseInt(rules.COUNT) || 10; // 기본 10회 반복
+  
+  if (rules.UNTIL) {
+    // UNTIL 날짜까지만 반복
+    const untilDate = new Date(rules.UNTIL.substring(0, 8).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+    count = Math.floor((untilDate - startDate) / (1000 * 60 * 60 * 24)) / interval;
+  }
+  
+  for (let i = 1; i <= Math.min(count, 50); i++) { // 최대 50회로 제한
+    const eventDate = new Date(startDate);
+    
+    if (rules.FREQ === 'DAILY') {
+      eventDate.setDate(startDate.getDate() + (i * interval));
+    } else if (rules.FREQ === 'WEEKLY') {
+      eventDate.setDate(startDate.getDate() + (i * interval * 7));
+    } else if (rules.FREQ === 'MONTHLY') {
+      eventDate.setMonth(startDate.getMonth() + (i * interval));
+    }
+    
+    events.push({
+      ...baseEvent,
+      date: eventDate.toISOString().split('T')[0]
+    });
+  }
+  
   return events;
 }
 
