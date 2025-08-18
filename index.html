@@ -1301,32 +1301,65 @@ function parseIcalData(icalText) {
 //반복일정확장함수
 // 더 정확한 반복 일정 확장 함수
 function expandRecurringEvent(event, viewStart, viewEnd) {
-    if (!event.rrule) return [event];
+    console.log('Processing event:', event.title, event.rrule);
+    
+    if (!event.rrule) {
+        console.log('No rrule found');
+        return [event];
+    }
     
     const occurrences = [];
     const eventStart = new Date(event.start);
     const eventDuration = new Date(event.end) - new Date(event.start);
     
+    console.log('Event start:', eventStart);
+    console.log('View range:', viewStart, 'to', viewEnd);
+    
     // RRULE 파싱 개선
-    const rrule = event.rrule.replace('RRULE:', '');
+    const rrule = event.rrule.replace('RRULE:', '').trim();
     const rules = {};
     rrule.split(';').forEach(part => {
         const [key, value] = part.split('=');
-        rules[key] = value;
+        if (key && value) {
+            rules[key.trim()] = value.trim();
+        }
     });
     
+    console.log('Parsed rules:', rules);
+    
     let current = new Date(eventStart);
-    const maxOccurrences = 100; // 안전장치
+    const maxOccurrences = 100;
     let count = 0;
     
+    // 시작 날짜가 뷰 범위보다 훨씬 이전인 경우, 뷰 시작에 가까운 위치로 이동
+    if (current < viewStart) {
+        const diffDays = Math.floor((viewStart - current) / (1000 * 60 * 60 * 24));
+        if (rules.FREQ === 'DAILY') {
+            const interval = parseInt(rules.INTERVAL) || 1;
+            const steps = Math.floor(diffDays / interval);
+            current.setDate(current.getDate() + (steps * interval));
+        } else if (rules.FREQ === 'WEEKLY') {
+            const interval = parseInt(rules.INTERVAL) || 1;
+            const steps = Math.floor(diffDays / (7 * interval));
+            current.setDate(current.getDate() + (steps * 7 * interval));
+        }
+    }
+    
+    console.log('Starting from:', current);
+    
     while (current <= viewEnd && count < maxOccurrences) {
+        console.log('Checking date:', current);
+        
         if (current >= viewStart) {
-            occurrences.push({
+            const occurrence = {
                 ...event,
                 start: new Date(current),
                 end: new Date(current.getTime() + eventDuration),
-                isRecurring: true
-            });
+                isRecurring: true,
+                id: `${event.id}_${current.getTime()}` // 고유 ID 추가
+            };
+            occurrences.push(occurrence);
+            console.log('Added occurrence:', occurrence.start);
         }
         
         // 반복 규칙에 따라 다음 날짜 계산
@@ -1344,25 +1377,32 @@ function expandRecurringEvent(event, viewStart, viewEnd) {
                 current.setMonth(current.getMonth() + monthInterval);
                 break;
             default:
-                return occurrences; // 지원하지 않는 빈도
+                console.log('Unsupported frequency:', rules.FREQ);
+                return occurrences;
         }
         
         count++;
         
-        // COUNT 제한이 있는 경우
+        // COUNT 제한 체크
         if (rules.COUNT && count >= parseInt(rules.COUNT)) {
+            console.log('Reached COUNT limit:', rules.COUNT);
             break;
         }
         
-        // UNTIL 날짜 제한이 있는 경우
+        // UNTIL 날짜 제한 체크
         if (rules.UNTIL) {
-            const until = new Date(rules.UNTIL);
-            if (current > until) break;
+            const until = new Date(rules.UNTIL.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+            if (current > until) {
+                console.log('Reached UNTIL limit:', until);
+                break;
+            }
         }
     }
     
+    console.log('Generated occurrences:', occurrences.length);
     return occurrences;
 }
+
 
 
 // iCal 텍스트 디코딩
