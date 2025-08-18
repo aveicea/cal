@@ -14,7 +14,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  max-width: 1200px;  /* 추가 - 전체 최대 가로 크기 */
+  max-width: 1000px;  /* 추가 - 전체 최대 가로 크기 */
   margin: 0 auto;     /* 추가 - 가운데 정렬 */
 }
 
@@ -56,14 +56,14 @@ body {
 
 .nav-controls {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
   margin-right: 20px;
 }
 
 .nav-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: 1px solid #ddd;
   background: white;
   border-radius: 6px;
@@ -72,21 +72,25 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  color: var(--accent-color, #4285f4);  /* 추가 - 테마색 적용 */
+  font-weight: 500;  /* 추가 */
 }
 
 .nav-btn:hover {
   background: #f8f9fa;
+  color: var(--accent-hover-color, #3367d6);
 }
 
 .current-date {
-  padding: 6px 10px;
+  padding: 8px 16px;
   background: #f8f9fa;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
   color: #333;
-  min-width: 100px;
+  min-width: 140px;
   text-align: center;
+  margin: 0 8px;     /* 추가 - 좌우 여백 */
 }
 
 .settings-btn {
@@ -470,8 +474,8 @@ body {
 
 .time-slot {
   background: #f8f9fa;
-  padding: 4px;
-  font-size: 9px;
+  padding: 2px;
+  font-size: 8px;
   color: #666;
   border-right: 1px solid #e0e0e0;
   border-bottom: 1px solid #f0f0f0;
@@ -677,7 +681,7 @@ body {
     <button class="nav-btn" onclick="navigateCalendar(-1)">‹</button>
     <div class="current-date" id="currentDate"></div>
     <button class="nav-btn" onclick="navigateCalendar(1)">›</button>
-    <button class="nav-btn" onclick="goToToday()">오늘</button>
+    <button class="nav-btn" onclick="goToToday()">📅</button>
   </div>
   
   <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
@@ -1427,7 +1431,7 @@ function toggleCalendarVisibility(calendarId) {
 // 캘린더 삭제
 function removeCalendar(calendarId) {
   const calendar = calendars.find(c => c.id === calendarId);
-  if (calendar && confirm(`'${calendar.name}' 캘린더를 삭제하시겠습니까?`)) {
+  if (calendar) {
     calendars = calendars.filter(c => c.id !== calendarId);
     updateCalendarList();
     renderCalendar();
@@ -1904,15 +1908,16 @@ function renderWeekView() {
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '100%';
+  container.style.height = '500px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = `80px 1fr`;
-  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
+  grid.style.gridTemplateColumns = `50px 1fr`;
+  grid.style.gridTemplateRows = `30px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
+  grid.style.height = '450px'; 
 
   // 헤더들 (이전과 동일)
   const timeHeader = document.createElement('div');
