@@ -1477,6 +1477,8 @@ function renderMonthView() {
 }
 
 
+
+
 // 공통 상수 (24시간 기준으로 변경)
 const SLOT_START_HOUR = 6;  // 오전 6시 시작
 const TOTAL_HOURS = 24;     // 24시간 표시
@@ -1679,10 +1681,10 @@ function renderWeekView() {
           eventDiv.style.textOverflow = 'ellipsis';
           eventDiv.style.whiteSpace = 'nowrap';
           eventDiv.style.position = 'absolute';
-          eventDiv.style.top = '0';
-          eventDiv.style.left = '0';
-          eventDiv.style.right = '0';
-          eventDiv.style.height = '100%';
+          eventDiv.style.top = '2px';
+          eventDiv.style.left = '2px';
+          eventDiv.style.right = '2px';
+          eventDiv.style.height = 'calc(100% - 4px)';
           eventDiv.textContent = splitEvent.title;
           eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
           
@@ -1715,7 +1717,9 @@ function renderWeekView() {
           eventDiv.style.textOverflow = 'ellipsis';
           eventDiv.style.whiteSpace = 'nowrap';
           eventDiv.style.position = 'absolute';
-          eventDiv.style.zIndex = currentEventIndex + 1;
+          
+          // z-index: 나중에 추가된 이벤트(아래쪽)가 더 위로 오도록
+          eventDiv.style.zIndex = 100 - currentEventIndex;
           
           // 정확한 위치와 높이 계산
           const cellHeight = 50; // 그리드 행 높이
@@ -1725,12 +1729,13 @@ function renderWeekView() {
           eventDiv.style.top = `${topOffset}px`;
           eventDiv.style.height = `${Math.max(height, 20)}px`; // 최소 높이 보장
           
-          // 겹치는 이벤트들을 옆으로 배치하되, 너무 멀리 가지 않도록
-          const eventWidth = 100 - (currentEventIndex * 5); // 5%씩 줄어듦
-          const leftOffset = currentEventIndex * 3; // 3px씩 이동
+          // 겹치는 이벤트들을 적절히 배치 (그리드 범위 내에서만)
+          const leftOffset = Math.min(currentEventIndex * 3, 15); // 최대 15px 제한
+          const maxWidth = 100 - ((leftOffset / 100) * 100) - 2; // 2%는 여백
           
           eventDiv.style.left = `${leftOffset}px`;
-          eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
+          eventDiv.style.width = `calc(${Math.max(maxWidth, 50)}% - 2px)`; // 최소 50% 너비 보장
+          eventDiv.style.boxSizing = 'border-box';
           
           eventDiv.textContent = splitEvent.title;
           eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
@@ -1780,7 +1785,7 @@ function renderWeekView() {
             eventDiv.style.textOverflow = 'ellipsis';
             eventDiv.style.whiteSpace = 'nowrap';
             eventDiv.style.position = 'absolute';
-            eventDiv.style.zIndex = currentEventIndex + 1;
+            eventDiv.style.zIndex = 100 - currentEventIndex;
             
             const cellHeight = 50;
             const topOffset = (startPosition - startSlot) * cellHeight;
@@ -1789,11 +1794,12 @@ function renderWeekView() {
             eventDiv.style.top = `${topOffset}px`;
             eventDiv.style.height = `${Math.max(height, 20)}px`;
             
-            const eventWidth = 100 - (currentEventIndex * 5);
-            const leftOffset = currentEventIndex * 3;
+            const leftOffset = Math.min(currentEventIndex * 3, 15);
+            const maxWidth = 100 - ((leftOffset / 100) * 100) - 2;
             
             eventDiv.style.left = `${leftOffset}px`;
-            eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
+            eventDiv.style.width = `calc(${Math.max(maxWidth, 50)}% - 2px)`;
+            eventDiv.style.boxSizing = 'border-box';
             
             eventDiv.textContent = splitEvent.title;
             eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
@@ -1916,10 +1922,10 @@ function renderDayView() {
         eventDiv.style.textOverflow = 'ellipsis';
         eventDiv.style.whiteSpace = 'nowrap';
         eventDiv.style.position = 'absolute';
-        eventDiv.style.top = '0';
-        eventDiv.style.left = '0';
-        eventDiv.style.right = '0';
-        eventDiv.style.height = '100%';
+        eventDiv.style.top = '2px';
+        eventDiv.style.left = '2px';
+        eventDiv.style.right = '2px';
+        eventDiv.style.height = 'calc(100% - 4px)';
         eventDiv.textContent = splitEvent.title;
         eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
         
@@ -1950,7 +1956,7 @@ function renderDayView() {
         eventDiv.style.textOverflow = 'ellipsis';
         eventDiv.style.whiteSpace = 'nowrap';
         eventDiv.style.position = 'absolute';
-        eventDiv.style.zIndex = currentEventIndex + 1;
+        eventDiv.style.zIndex = 100 - currentEventIndex;
         
         const cellHeight = 50;
         const topOffset = (startPosition - startSlot) * cellHeight;
@@ -1959,11 +1965,12 @@ function renderDayView() {
         eventDiv.style.top = `${topOffset}px`;
         eventDiv.style.height = `${Math.max(height, 20)}px`;
         
-        const eventWidth = 100 - (currentEventIndex * 5);
-        const leftOffset = currentEventIndex * 3;
+        const leftOffset = Math.min(currentEventIndex * 3, 15);
+        const maxWidth = 100 - ((leftOffset / 100) * 100) - 2;
         
         eventDiv.style.left = `${leftOffset}px`;
-        eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
+        eventDiv.style.width = `calc(${Math.max(maxWidth, 50)}% - 2px)`;
+        eventDiv.style.boxSizing = 'border-box';
         
         eventDiv.textContent = splitEvent.title;
         eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
