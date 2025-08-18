@@ -1235,24 +1235,44 @@ function parseIcalData(icalText) {
     if (line === 'BEGIN:VEVENT') {
       currentEvent = {};
     } 
-// 'END:VEVENT' 처리 부분을 다음과 같이 수정
     else if (line === 'END:VEVENT' && currentEvent) {
       if (currentEvent.summary && currentEvent.dtstart) {
         const baseEvent = {
+          id: currentEvent.uid || `event_${Date.now()}_${Math.random()}`,
           title: currentEvent.summary,
           date: currentEvent.date,
+          start: currentEvent.date + 'T' + (currentEvent.startTime === '종일' ? '00:00:00' : currentEvent.startTime + ':00'),
+          end: currentEvent.date + 'T' + (currentEvent.endTime === '종일' ? '23:59:59' : currentEvent.endTime + ':00'),
           time: currentEvent.time || '종일',
           startTime: currentEvent.startTime || currentEvent.time || '종일',
           endTime: currentEvent.endTime || currentEvent.time || '종일',
-          description: currentEvent.description || ''
+          description: currentEvent.description || '',
+          rrule: currentEvent.rrule
         };
         
-        events.push(baseEvent);
-        
-        // 반복 일정 처리
+        // 반복 일정인 경우 - 여기가 핵심!
         if (currentEvent.rrule) {
-          const expandedEvents = expandRecurringEvent(baseEvent, currentEvent.rrule);
+          addDebugLog(`반복 일정 발견: ${baseEvent.title}, RRULE: ${currentEvent.rrule}`);
+          
+          // 현재 뷰 범위 계산
+          const viewStart = new Date();
+          viewStart.setMonth(viewStart.getMonth() - 1);
+          const viewEnd = new Date();
+          viewEnd.setMonth(viewEnd.getMonth() + 2);
+          
+          // 기존 함수들 활용
+          const expandedEvents = expandRecurringEventWithExceptions(
+            baseEvent, 
+            viewStart, 
+            viewEnd, 
+            new Map() // 예외 이벤트는 일단 빈 Map
+          );
+          
           events.push(...expandedEvents);
+          addDebugLog(`반복 일정 확장 완료: ${expandedEvents.length}개 인스턴스`);
+        } else {
+          // 일반 단일 이벤트
+          events.push(baseEvent);
         }
       }
       currentEvent = null;
@@ -1264,6 +1284,9 @@ function parseIcalData(icalText) {
         const value = line.substring(colonIndex + 1);
         
         switch (key) {
+          case 'UID':
+            currentEvent.uid = value;
+            break;
           case 'SUMMARY':
             currentEvent.summary = decodeIcalText(value);
             break;
@@ -1285,9 +1308,9 @@ function parseIcalData(icalText) {
               currentEvent.endTime = endDate.time;
             }
             break;
-            // parseIcalData() 함수의 switch 문에 추가
           case 'RRULE':
             currentEvent.rrule = value;
+            addDebugLog(`RRULE 파싱됨: ${value}`);
             break;
         }
       }
@@ -1297,6 +1320,7 @@ function parseIcalData(icalText) {
   addDebugLog(`iCal 파싱 완료: ${events.length}개 이벤트 추출`);
   return events;
 }
+
 
 //반복일정확장함수
 function processRecurringEventsWithExceptions(events, viewStart, viewEnd) {
