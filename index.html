@@ -840,6 +840,23 @@ function init() {
   renderCalendar();
   addDebugLog('샘플 캘린더가 추가되었습니다.');
   addDebugLog('캘린더 뷰어가 시작되었습니다.');
+  // init() 함수 끝에 추가
+  setInterval(async () => {
+    for (const calendar of calendars) {
+      if (calendar.type !== 'sample' && calendar.visible) {
+        try {
+          const oldEventCount = calendar.events.length;
+          await loadCalendarEvents(calendar);
+          if (calendar.events.length !== oldEventCount) {
+            renderCalendar();
+            addDebugLog(`새 일정 감지: ${calendar.name}`);
+          }
+        } catch (error) {
+          // 조용히 실패 처리
+        }
+      }
+    }
+  }, 120000); // 2분마다 체크
 }
 
 // 설정 패널
@@ -1914,7 +1931,7 @@ function renderDayView() {
   const grid = document.createElement('div');
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = `50px 1fr`;
+  grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
   grid.style.height = '550px'; 
