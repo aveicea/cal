@@ -10,6 +10,7 @@ body {
   margin: 0;
   padding: 0;
   background: #ffffff;
+  min-height: 100vh;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -385,6 +386,8 @@ body {
   flex: 1;
   overflow: auto;
   background: #f8f9fa;
+  height: calc(100vh - 120px);  /* 이 줄 추가 */
+  min-height: 400px;  /* 이 줄 추가 */
 }
 
 /* 월간 뷰 */
@@ -396,7 +399,8 @@ body {
   background: #e0e0e0;
   border: 1px solid #e0e0e0;
   height: 100%;
-  min-height: 500px;
+  min-height: 250px;
+  height: calc(100vh - 200px);
 }
 
 .calendar-day {
@@ -444,12 +448,12 @@ body {
 
 .week-view {
   grid-template-columns: 70px repeat(7, 1fr);
-  grid-template-rows: 50px repeat(18, 50px); /* 6시~23시 = 18시간 */
+  grid-template-rows: 40px repeat(24, minmax(30px, 1fr)); /* 6시~23시 = 18시간 */
 }
 
 .day-view {
   grid-template-columns: 70px 1fr;
-  grid-template-rows: 50px repeat(18, 50px); /* 6시~23시 = 18시간 */
+  grid-template-rows: 40px repeat(24, minmax(30px, 1fr)); /* 6시~23시 = 18시간 */
 }
 
 .time-slot {
@@ -626,116 +630,25 @@ body {
   }
 }
 
-
-/* 1. 전체 컨테이너(박스)와 내용 기본 축소 */
-body {
-  font-size: 12px; /* 텍스트 전체 축소 */
-}
-.container,
-.main-content,
-.calendar-settings,
-.sidebar {
-  max-width: 420px;
-  padding: 6px 8px;
-  margin: 8px auto;
-  box-sizing: border-box;
-  border-radius: 6px;
-}
-.cal-box,
-.cal-header,
-.cal-footer {
-  padding: 8px 6px;
-  margin: 6px 0;
-}
-
-/* 2. 버튼 · 입력 · 셀렉트 · 아이콘 크기 축소 */
-button,
-.btn {
-  font-size: 12px;
-  padding: 4px 8px;
-  min-height: 28px;
-  border-radius: 4px;
-}
-input,
-select,
-textarea {
-  font-size: 12px;
-  padding: 4px 7px;
-  min-height: 24px;
-  border-radius: 4px;
-}
-.icon,
-.settings-icon {
-  font-size: 16px; /* 아이콘도 작게 */
-  vertical-align: middle;
-  margin-right: 4px;
-}
-
-/* 3. 마진/패딩 및 각종 여백 축소 */
-.row,
-.col,
-.flex {
-  margin: 4px 0;
-  padding: 4px 0;
-}
-label {
-  font-size: 12px;
-  margin-right: 4px;
-}
-
-/* 4. 캘린더/테이블 셀 등도 숨겨진 스타일명 있으면 추가 */
-td,
-th {
-  font-size: 12px;
-  padding: 4px 6px;
-}
-
-/* 5. 반응형: 창이 커질수록 자연스럽게 커짐 */
-@media (min-width: 600px) {
-  .container,
-  .main-content,
-  .calendar-settings,
-  .sidebar {
-    max-width: 700px;
-    font-size: 14px;
+@media (max-height: 600px) {
+  .calendar-grid.month-view {
+    min-height: 200px;
   }
-  button,
-  .btn,
-  input,
-  select,
-  textarea,
-  label,
-  .icon,
-  .settings-icon {
-    font-size: 14px;
-  }
-  td, th {
-    font-size: 14px;
-  }
-}
-@media (min-width: 900px) {
-  .container,
-  .main-content,
-  .calendar-settings,
-  .sidebar {
-    max-width: 900px;
-    font-size: 16px;
-  }
-  button,
-  .btn,
-  input,
-  select,
-  textarea,
-  label,
-  .icon,
-  .settings-icon {
-    font-size: 16px;
-  }
-  td, th {
-    font-size: 16px;
+  
+  .week-view, .day-view {
+    grid-template-rows: 30px repeat(24, minmax(20px, 1fr));
   }
 }
 
+@media (min-height: 800px) {
+  .calendar-grid.month-view {
+    min-height: 400px;
+  }
+  
+  .week-view, .day-view {
+    grid-template-rows: 50px repeat(24, minmax(40px, 1fr));
+  }
+}
 
 </style>
 </head>
@@ -1521,6 +1434,7 @@ function renderCalendar() {
   }
 }
 
+// 월간 뷰
 function renderMonthView() {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
@@ -1938,7 +1852,8 @@ function renderWeekView() {
             eventDiv.style.boxSizing = 'border-box';
             eventDiv.style.zIndex = 100 - currentEventIndex;
             
-            const cellHeight = 50;
+            const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외
+            const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
             const topOffset = (startPosition - startSlot) * cellHeight;
             const height = (endPosition - startPosition) * cellHeight;
             
@@ -1971,7 +1886,7 @@ function renderWeekView() {
   calendarContent.appendChild(container);
 }
 
-// 일간 뷰도 동일한 방식으로 수정 (동일한 로직 적용)
+// 일간 뷰
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
@@ -2112,7 +2027,8 @@ function renderDayView() {
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.zIndex = 100 - currentEventIndex;
         
-        const cellHeight = 50;
+        const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외 
+        const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
         const topOffset = (startPosition - startSlot) * cellHeight;
         const height = (clampedEndPosition - startPosition) * cellHeight;
         
