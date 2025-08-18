@@ -56,14 +56,14 @@ body {
 
 .nav-controls {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   margin-right: 20px;
 }
 
 .nav-btn {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border: 1px solid #ddd;
   background: white;
   border-radius: 6px;
@@ -73,7 +73,6 @@ body {
   justify-content: center;
   transition: all 0.2s ease;
   color: var(--accent-color, #D1D1D1);  /* 추가 - 테마색 적용 */
-  font-weight: 500;  /* 추가 */
 }
 
 .nav-btn:hover {
@@ -82,13 +81,13 @@ body {
 }
 
 .current-date {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: #f8f9fa;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
   color: #333;
-  min-width: 140px;
+  min-width: 120px;
   text-align: center;
   margin: 0 8px;     /* 추가 - 좌우 여백 */
 }
@@ -1908,16 +1907,16 @@ function renderWeekView() {
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '500px';
+  container.style.height = '600px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = `50px 1fr`;
-  grid.style.gridTemplateRows = `30px repeat(${SLOT_COUNT}, 25px)`;
+  grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
+  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = '450px'; 
+  grid.style.height = '500px'; 
 
   // 헤더들 (이전과 동일)
   const timeHeader = document.createElement('div');
