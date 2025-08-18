@@ -1300,12 +1300,20 @@ function parseIcalData(icalText) {
           const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
           const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
           
-          // 기존 함수들 활용
+          // 먼저 예외 이벤트들을 수집
+          const exceptionEvents = new Map();
+          events.forEach(event => {
+              if (event.recurrenceId) {
+                  const key = `${baseEvent.id}_${new Date(event.recurrenceId).toDateString()}`;
+                  exceptionEvents.set(key, event);
+              }
+          });
+
           const expandedEvents = expandRecurringEventWithExceptions(
-            baseEvent, 
-            viewStart, 
-            viewEnd, 
-            new Map() // 예외 이벤트는 일단 빈 Map
+              baseEvent, 
+              viewStart, 
+              viewEnd, 
+              exceptionEvents
           );
           
           events.push(...expandedEvents);
@@ -1393,11 +1401,6 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
         }
     });
     
-    addDebugLog(`반복 일정 확장 시작: ${event.title}`);
-    addDebugLog(`RRULE 분석 - FREQ: ${rules.FREQ}, COUNT: ${rules.COUNT}, UNTIL: ${rules.UNTIL}, INTERVAL: ${rules.INTERVAL}`);
-    addDebugLog(`뷰 범위: ${viewStart.toISOString()} ~ ${viewEnd.toISOString()}`);
-
-
     // EXDATE 처리
     const excludedDates = new Set();
     if (event.exdate) {
@@ -1409,8 +1412,7 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
     }
     
     let current = new Date(eventStart.getTime());
-    const maxOccurrences = rules.COUNT ? 
-    Math.min(parseInt(rules.COUNT) + 5, 50) : 30;
+    const maxOccurrences = 200;
     let count = 0;
     
     // 시작일이 뷰 범위보다 이전이면 뷰 시작 근처로 이동
@@ -1464,7 +1466,6 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
             const currentDateString = current.toDateString();
             const exceptionKey = `${event.id}_${currentDateString}`;
             
-            
             // 제외된 날짜인지 확인
             if (!excludedDates.has(currentDateString)) {
                 // 수정된 인스턴스가 있는지 확인
@@ -1498,7 +1499,6 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                         originalEventId: event.id
                     });
                 }
-                count++;
             }
         }
         
@@ -1540,45 +1540,23 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                 current.setMonth(current.getMonth() + monthInterval);
                 break;
         }
-              
-        // UNTIL 값을 제대로 파싱
-        // 기존 코드를 이 부분으로 교체
-        let untilDate = null;
-        if (rules.UNTIL) {
-            try {
-                if (rules.UNTIL.length === 8) {
-                    // YYYYMMDD 형식
-                    const year = parseInt(rules.UNTIL.substring(0, 4));
-                    const month = parseInt(rules.UNTIL.substring(4, 6)) - 1;
-                    const day = parseInt(rules.UNTIL.substring(6, 8));
-                    untilDate = new Date(year, month, day, 23, 59, 59);
-                } else if (rules.UNTIL.includes('T')) {
-                    // YYYYMMDDTHHMMSS[Z] 형식
-                    const parsed = parseIcalDate(rules.UNTIL);
-                    if (parsed) {
-                        untilDate = new Date(parsed.date + 'T' + (parsed.time === '종일' ? '23:59:59' : parsed.time + ':00'));
-                    }
-                }
-                addDebugLog(`UNTIL 파싱 결과: ${untilDate ? untilDate.toISOString() : '실패'}`);
-            } catch (e) {
-                addDebugLog(`UNTIL 파싱 오류: ${e.message}`);
-            }
-        }
-
-        // 제한 조건 체크를 루프 끝으로 이동 (라인 약 620 근처)
+        
+        count++;
+        
+        // 제한 조건 체크
         if (rules.COUNT && count >= parseInt(rules.COUNT)) {
             addDebugLog(`COUNT 제한 도달: ${count}`);
             break;
         }
-        if (untilDate && current > untilDate) {
-            addDebugLog(`UNTIL 날짜 도달: ${current.toISOString()} > ${untilDate.toISOString()}`);
+        if (rules.UNTIL && current > untilDate) {
+            addDebugLog(`UNTIL 날짜 초과: ${current.toISOString()}`);
             break;
         }
-            }
-            
-            console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
-            return occurrences;
-      } 
+    }
+    
+    console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
+    return occurrences;
+}
 
 
 // iCal 텍스트 디코딩
@@ -2122,7 +2100,7 @@ function renderWeekView() {
           eventDiv.style.boxSizing = 'border-box';
           
           // z-index: 나중에 추가된 이벤트(아래쪽)가 더 위로 오도록
-          eventDiv.style.zIndex = 100 - currentEventIndex;
+          eventDiv.style.zIndex = 100 + totalEvents + currentEventIndex;
           
           // 정확한 위치와 높이 계산
           const cellHeight = 25; // 그리드 행 높이
@@ -2196,7 +2174,7 @@ function renderWeekView() {
             eventDiv.style.whiteSpace = 'nowrap';
             eventDiv.style.position = 'absolute';
             eventDiv.style.boxSizing = 'border-box';
-            eventDiv.style.zIndex = 100 - currentEventIndex;
+            eventDiv.style.zIndex = 100 + totalEvents + currentEventIndex;
             
             const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외
             const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
@@ -2372,7 +2350,7 @@ function renderDayView() {
         eventDiv.style.whiteSpace = 'nowrap';
         eventDiv.style.position = 'absolute';
         eventDiv.style.boxSizing = 'border-box';
-        eventDiv.style.zIndex = 100 - currentEventIndex;
+        eventDiv.style.zIndex = 100 + totalEvents + currentEventIndex;
         
         const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외 
         const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
@@ -2441,22 +2419,7 @@ function getAllEventsForDate(date) {
       });
     });
   });
-  
   return allEvents;
-
-    // 함수 마지막에 추가
-  const uniqueEvents = [];
-  const seenEvents = new Set();
-
-  allEvents.forEach(event => {
-      const key = `${event.title}_${event.date}_${event.startTime}_${event.endTime}`;
-      if (!seenEvents.has(key)) {
-          seenEvents.add(key);
-          uniqueEvents.push(event);
-      }
-  });
-
-  return uniqueEvents;
 }
 
 
