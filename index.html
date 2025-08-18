@@ -1477,7 +1477,6 @@ function renderMonthView() {
 }
 
 
-
 // 공통 상수 (24시간 기준으로 변경)
 const SLOT_START_HOUR = 6;  // 오전 6시 시작
 const TOTAL_HOURS = 24;     // 24시간 표시
@@ -1611,6 +1610,9 @@ function renderWeekView() {
     grid.appendChild(header);
   }
 
+  // 각 날짜별 셀 저장용 배열
+  const dayCells = Array.from({length: 7}, () => []);
+
   // 24시간 슬롯 생성
   for (let slotIndex = 0; slotIndex < SLOT_COUNT; slotIndex++) {
     const displayHour = getDisplayHour(slotIndex);
@@ -1632,10 +1634,12 @@ function renderWeekView() {
     for (let day = 0; day < 7; day++) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
+      cell.dataset.day = day;
+      cell.dataset.slot = slotIndex;
       cell.style.gridRow = `${slotIndex + 2}`;
       cell.style.gridColumn = `${day + 2}`;
       cell.style.border = '1px solid #e0e0e0';
-      cell.style.position = 'relative';
+      cell.style.position = 'relative';  // 중요: 자식 요소들의 absolute positioning 기준점
       cell.style.backgroundColor = 'white';
       
       // 자정 이후 시간대는 다른 스타일
@@ -1643,6 +1647,7 @@ function renderWeekView() {
         cell.style.backgroundColor = '#f9f9f9';
       }
       
+      dayCells[day][slotIndex] = cell;
       grid.appendChild(cell);
     }
   }
@@ -1653,7 +1658,7 @@ function renderWeekView() {
     date.setDate(startOfWeek.getDate() + day);
 
     const dayEvents = getAllEventsForDate(date);
-    let eventIndex = 0;
+    const eventCounts = Array(SLOT_COUNT).fill(0); // 각 슬롯별 이벤트 개수
     
     dayEvents.forEach((event) => {
       const splitEvents = splitCrossDayEvent(event);
@@ -1664,8 +1669,6 @@ function renderWeekView() {
         if (splitEvent.time === '종일') {
           const eventDiv = document.createElement('div');
           eventDiv.className = 'all-day-event';
-          eventDiv.style.gridRow = '2';
-          eventDiv.style.gridColumn = `${day + 2}`;
           eventDiv.style.backgroundColor = event.color;
           eventDiv.style.color = 'white';
           eventDiv.style.padding = '4px 8px';
@@ -1675,9 +1678,15 @@ function renderWeekView() {
           eventDiv.style.overflow = 'hidden';
           eventDiv.style.textOverflow = 'ellipsis';
           eventDiv.style.whiteSpace = 'nowrap';
+          eventDiv.style.position = 'absolute';
+          eventDiv.style.top = '0';
+          eventDiv.style.left = '0';
+          eventDiv.style.right = '0';
+          eventDiv.style.height = '100%';
           eventDiv.textContent = splitEvent.title;
           eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
-          grid.appendChild(eventDiv);
+          
+          dayCells[day][0].appendChild(eventDiv);
         } else {
           const startHour = getEventHour(splitEvent.startTime);
           const endHour = getEventHour(splitEvent.endTime);
@@ -1689,11 +1698,14 @@ function renderWeekView() {
           
           // 그리드 범위 제한
           const clampedEndPosition = Math.min(endPosition, SLOT_COUNT);
+          const startSlot = Math.floor(startPosition);
+          
+          // 현재 슬롯의 이벤트 개수
+          const currentEventIndex = eventCounts[startSlot];
+          eventCounts[startSlot]++;
 
           const eventDiv = document.createElement('div');
           eventDiv.className = 'time-event';
-          eventDiv.style.gridRow = `${Math.floor(startPosition) + 2}`;
-          eventDiv.style.gridColumn = `${day + 2}`;
           eventDiv.style.backgroundColor = event.color;
           eventDiv.style.color = 'white';
           eventDiv.style.padding = '2px 6px';
@@ -1703,33 +1715,35 @@ function renderWeekView() {
           eventDiv.style.textOverflow = 'ellipsis';
           eventDiv.style.whiteSpace = 'nowrap';
           eventDiv.style.position = 'absolute';
-          eventDiv.style.zIndex = eventIndex + 1;
+          eventDiv.style.zIndex = currentEventIndex + 1;
           
           // 정확한 위치와 높이 계산
           const cellHeight = 50; // 그리드 행 높이
-          const topOffset = (startPosition - Math.floor(startPosition)) * cellHeight;
+          const topOffset = (startPosition - startSlot) * cellHeight;
           const height = (clampedEndPosition - startPosition) * cellHeight;
           
           eventDiv.style.top = `${topOffset}px`;
-          eventDiv.style.height = `${height}px`;
-          eventDiv.style.left = `${eventIndex * 2}px`;
-          eventDiv.style.right = `${eventIndex * 2}px`;
+          eventDiv.style.height = `${Math.max(height, 20)}px`; // 최소 높이 보장
+          
+          // 겹치는 이벤트들을 옆으로 배치하되, 너무 멀리 가지 않도록
+          const eventWidth = 100 - (currentEventIndex * 5); // 5%씩 줄어듦
+          const leftOffset = currentEventIndex * 3; // 3px씩 이동
+          
+          eventDiv.style.left = `${leftOffset}px`;
+          eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
           
           eventDiv.textContent = splitEvent.title;
           eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
 
-          // 부모 셀에 추가
-          const parentCell = grid.querySelector(`[style*="grid-row: ${Math.floor(startPosition) + 2}"][style*="grid-column: ${day + 2}"]`);
-          if (parentCell) {
-            parentCell.appendChild(eventDiv);
+          // 시작 슬롯의 셀에 추가
+          if (dayCells[day][startSlot]) {
+            dayCells[day][startSlot].appendChild(eventDiv);
           }
-          
-          eventIndex++;
         }
       });
     });
     
-    // 다음날 새벽 이벤트 처리 (동일한 방식)
+    // 다음날 새벽 이벤트 처리
     const nextDate = new Date(date);
     nextDate.setDate(date.getDate() + 1);
     const nextDayEvents = getAllEventsForDate(nextDate);
@@ -1750,11 +1764,13 @@ function renderWeekView() {
 
             const startPosition = getExactSlotPosition(startHour, startMinute);
             const endPosition = getExactSlotPosition(endHour, endMinute);
+            const startSlot = Math.floor(startPosition);
+            
+            const currentEventIndex = eventCounts[startSlot] || 0;
+            eventCounts[startSlot] = (eventCounts[startSlot] || 0) + 1;
 
             const eventDiv = document.createElement('div');
             eventDiv.className = 'time-event';
-            eventDiv.style.gridRow = `${Math.floor(startPosition) + 2}`;
-            eventDiv.style.gridColumn = `${day + 2}`;
             eventDiv.style.backgroundColor = event.color;
             eventDiv.style.color = 'white';
             eventDiv.style.padding = '2px 6px';
@@ -1764,26 +1780,27 @@ function renderWeekView() {
             eventDiv.style.textOverflow = 'ellipsis';
             eventDiv.style.whiteSpace = 'nowrap';
             eventDiv.style.position = 'absolute';
-            eventDiv.style.zIndex = eventIndex + 1;
+            eventDiv.style.zIndex = currentEventIndex + 1;
             
             const cellHeight = 50;
-            const topOffset = (startPosition - Math.floor(startPosition)) * cellHeight;
+            const topOffset = (startPosition - startSlot) * cellHeight;
             const height = (endPosition - startPosition) * cellHeight;
             
             eventDiv.style.top = `${topOffset}px`;
-            eventDiv.style.height = `${height}px`;
-            eventDiv.style.left = `${eventIndex * 2}px`;
-            eventDiv.style.right = `${eventIndex * 2}px`;
+            eventDiv.style.height = `${Math.max(height, 20)}px`;
+            
+            const eventWidth = 100 - (currentEventIndex * 5);
+            const leftOffset = currentEventIndex * 3;
+            
+            eventDiv.style.left = `${leftOffset}px`;
+            eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
             
             eventDiv.textContent = splitEvent.title;
             eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
 
-            const parentCell = grid.querySelector(`[style*="grid-row: ${Math.floor(startPosition) + 2}"][style*="grid-column: ${day + 2}"]`);
-            if (parentCell) {
-              parentCell.appendChild(eventDiv);
+            if (dayCells[day][startSlot]) {
+              dayCells[day][startSlot].appendChild(eventDiv);
             }
-            
-            eventIndex++;
           }
         }
       });
@@ -1809,7 +1826,7 @@ function renderDayView() {
   grid.style.gridTemplateRows = `40px repeat(${SLOT_COUNT}, 50px)`;
   grid.style.gap = '0';
 
-  // 헤더들...
+  // 헤더들
   const timeHeader = document.createElement('div');
   timeHeader.className = 'week-header';
   timeHeader.textContent = '시간';
@@ -1840,6 +1857,9 @@ function renderDayView() {
   dayHeader.style.textAlign = 'center';
   grid.appendChild(dayHeader);
 
+  // 셀 저장용 배열
+  const dayCells = [];
+
   // 24시간 슬롯
   for (let slotIndex = 0; slotIndex < SLOT_COUNT; slotIndex++) {
     const displayHour = getDisplayHour(slotIndex);
@@ -1858,6 +1878,7 @@ function renderDayView() {
 
     const cell = document.createElement('div');
     cell.className = 'day-cell';
+    cell.dataset.slot = slotIndex;
     cell.style.gridRow = `${slotIndex + 2}`;
     cell.style.gridColumn = '2';
     cell.style.border = '1px solid #e0e0e0';
@@ -1868,12 +1889,13 @@ function renderDayView() {
       cell.style.backgroundColor = '#f9f9f9';
     }
     
+    dayCells[slotIndex] = cell;
     grid.appendChild(cell);
   }
 
-  // 이벤트 처리 (주간뷰와 동일한 로직)
+  // 이벤트 처리
   const dayEvents = getAllEventsForDate(currentDate);
-  let eventIndex = 0;
+  const eventCounts = Array(SLOT_COUNT).fill(0);
   
   dayEvents.forEach((event) => {
     const splitEvents = splitCrossDayEvent(event);
@@ -1884,8 +1906,6 @@ function renderDayView() {
       if (splitEvent.time === '종일') {
         const eventDiv = document.createElement('div');
         eventDiv.className = 'all-day-event';
-        eventDiv.style.gridRow = '2';
-        eventDiv.style.gridColumn = '2';
         eventDiv.style.backgroundColor = event.color;
         eventDiv.style.color = 'white';
         eventDiv.style.padding = '4px 8px';
@@ -1895,9 +1915,15 @@ function renderDayView() {
         eventDiv.style.overflow = 'hidden';
         eventDiv.style.textOverflow = 'ellipsis';
         eventDiv.style.whiteSpace = 'nowrap';
+        eventDiv.style.position = 'absolute';
+        eventDiv.style.top = '0';
+        eventDiv.style.left = '0';
+        eventDiv.style.right = '0';
+        eventDiv.style.height = '100%';
         eventDiv.textContent = splitEvent.title;
         eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
-        grid.appendChild(eventDiv);
+        
+        dayCells[0].appendChild(eventDiv);
       } else {
         const startHour = getEventHour(splitEvent.startTime);
         const endHour = getEventHour(splitEvent.endTime);
@@ -1908,11 +1934,13 @@ function renderDayView() {
         const endPosition = getExactSlotPosition(endHour, endMinute);
         
         const clampedEndPosition = Math.min(endPosition, SLOT_COUNT);
+        const startSlot = Math.floor(startPosition);
+        
+        const currentEventIndex = eventCounts[startSlot];
+        eventCounts[startSlot]++;
 
         const eventDiv = document.createElement('div');
         eventDiv.className = 'time-event';
-        eventDiv.style.gridRow = `${Math.floor(startPosition) + 2}`;
-        eventDiv.style.gridColumn = '2';
         eventDiv.style.backgroundColor = event.color;
         eventDiv.style.color = 'white';
         eventDiv.style.padding = '2px 6px';
@@ -1922,26 +1950,27 @@ function renderDayView() {
         eventDiv.style.textOverflow = 'ellipsis';
         eventDiv.style.whiteSpace = 'nowrap';
         eventDiv.style.position = 'absolute';
-        eventDiv.style.zIndex = eventIndex + 1;
+        eventDiv.style.zIndex = currentEventIndex + 1;
         
         const cellHeight = 50;
-        const topOffset = (startPosition - Math.floor(startPosition)) * cellHeight;
+        const topOffset = (startPosition - startSlot) * cellHeight;
         const height = (clampedEndPosition - startPosition) * cellHeight;
         
         eventDiv.style.top = `${topOffset}px`;
-        eventDiv.style.height = `${height}px`;
-        eventDiv.style.left = `${eventIndex * 2}px`;
-        eventDiv.style.right = `${eventIndex * 2}px`;
+        eventDiv.style.height = `${Math.max(height, 20)}px`;
+        
+        const eventWidth = 100 - (currentEventIndex * 5);
+        const leftOffset = currentEventIndex * 3;
+        
+        eventDiv.style.left = `${leftOffset}px`;
+        eventDiv.style.width = `calc(${eventWidth}% - ${leftOffset}px)`;
         
         eventDiv.textContent = splitEvent.title;
         eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}`;
 
-        const parentCell = grid.querySelector(`[style*="grid-row: ${Math.floor(startPosition) + 2}"][style*="grid-column: 2"]`);
-        if (parentCell) {
-          parentCell.appendChild(eventDiv);
+        if (dayCells[startSlot]) {
+          dayCells[startSlot].appendChild(eventDiv);
         }
-        
-        eventIndex++;
       }
     });
   });
@@ -1982,6 +2011,7 @@ function getAllEventsForDate(date) {
   });
   return allEvents;
 }
+
 
 
 
