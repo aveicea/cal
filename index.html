@@ -49,9 +49,9 @@ body {
 }
 
 .view-btn.active {
-  background: var(--accent-color, #4285f4);
+  background: var(--accent-color, #D1D1D1);
   color: white;
-  border-color: var(--accent-color, #4285f4);
+  border-color: var(--accent-color, #D1D1D1);
 }
 
 .nav-controls {
@@ -72,7 +72,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  color: var(--accent-color, #4285f4);  /* 추가 - 테마색 적용 */
+  color: var(--accent-color, #D1D1D1);  /* 추가 - 테마색 적용 */
   font-weight: 500;  /* 추가 */
 }
 
@@ -212,7 +212,7 @@ body {
 }
 
 .calendar-item.active {
-  border-color: var(--accent-color, #4285f4);
+  border-color: var(--accent-color, #D1D1D1);
   background: #e3f2fd;
 }
 
@@ -249,7 +249,7 @@ body {
 }
 
 .calendar-name:focus {
-  outline: 1px solid var(--accent-color, #4285f4);
+  outline: 1px solid var(--accent-color, #D1D1D1);
   outline-offset: 1px;
   border-radius: 2px;
 }
@@ -303,7 +303,7 @@ body {
 }
 
 .toggle-btn.visible {
-  background: var(--accent-color, #4285f4);
+  background: var(--accent-color, #D1D1D1);
   color: white;
 }
 
@@ -369,7 +369,7 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent-color, #4285f4);
+  background: var(--accent-color, #D1D1D1);
   color: white;
 }
 
@@ -432,7 +432,7 @@ body {
 }
 
 .calendar-day.today {
-  background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
+  background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
 }
 
 .day-number {
@@ -518,8 +518,8 @@ body {
 }
 
 .week-header.today {
-  background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
-  color: var(--accent-color, #4285f4);  /* 다시 원래대로 */
+  background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
+  color: var(--accent-color, #D1D1D1);  /* 다시 원래대로 */
   font-weight: 600;
 }
 
@@ -693,7 +693,7 @@ body {
       <div class="color-picker-title">테마 색상</div>
       <div class="color-input-row">
         <input type="color" class="color-picker-input" id="colorPicker" onchange="updateColorFromPicker()">
-        <input type="text" class="color-text-input" id="colorText" placeholder="#4285F4" oninput="updateColorFromText()" maxlength="7">
+        <input type="text" class="color-text-input" id="colorText" placeholder="#D1D1D1" oninput="updateColorFromText()" maxlength="7">
       </div>
       <div class="preset-colors">
         <div class="preset-color" style="background-color: #4285f4;" onclick="setPresetColor('#4285f4')"></div>
@@ -733,7 +733,7 @@ body {
       
       <div class="input-group">
         <label>캘린더 색상</label>
-        <input type="color" id="calendarColor" value="#4285f4">
+        <input type="color" id="calendarColor" value="#D1D1D1">
       </div>
       
       <div id="icalInputs" class="calendar-inputs active">
@@ -791,7 +791,7 @@ body {
 // 전역 변수
 let currentView = 'day';
 let currentDate = new Date();
-let accentColor = '#4285f4';
+let accentColor = '#D1D1D1';
 let accentHoverColor = '#3367d6';
 let calendars = [];
 let debugMessages = [];
@@ -2229,7 +2229,7 @@ function loadFromStorage() {
       if (parsed.currentDate) {
         currentDate = new Date(parsed.currentDate);
       }
-      accentColor = parsed.accentColor || '#4285f4';
+      accentColor = parsed.accentColor || '#D1D1D1';
       accentHoverColor = parsed.accentHoverColor || darkenColor(accentColor, 15);
       calendars = parsed.calendars || [];
       
@@ -2360,7 +2360,7 @@ console.log('%c멀티 캘린더 뷰어 디버그 도구%c\n' +
   'debugCalendar.clearStorage() - 저장된 데이터 삭제 및 새로고침\n' +
   'debugCalendar.addKoreanHolidays() - 한국 공휴일 캘린더 추가\n' +
   'debugCalendar.addSampleCalendar() - 샘플 캘린더 추가', 
-  'color: #4285f4; font-weight: bold; font-size: 14px;', 
+  'color: #D1D1D1; font-weight: bold; font-size: 14px;', 
   'color: #333; font-size: 12px;');
 </script>
 </body>
