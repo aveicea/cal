@@ -1393,6 +1393,11 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
         }
     });
     
+    addDebugLog(`반복 일정 확장 시작: ${event.title}`);
+    addDebugLog(`RRULE 분석 - FREQ: ${rules.FREQ}, COUNT: ${rules.COUNT}, UNTIL: ${rules.UNTIL}, INTERVAL: ${rules.INTERVAL}`);
+    addDebugLog(`뷰 범위: ${viewStart.toISOString()} ~ ${viewEnd.toISOString()}`);
+
+
     // EXDATE 처리
     const excludedDates = new Set();
     if (event.exdate) {
@@ -1404,7 +1409,8 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
     }
     
     let current = new Date(eventStart.getTime());
-    const maxOccurrences = 200;
+    const maxOccurrences = rules.COUNT ? 
+    Math.min(parseInt(rules.COUNT) + 5, 50) : 30;
     let count = 0;
     
     // 시작일이 뷰 범위보다 이전이면 뷰 시작 근처로 이동
@@ -1458,6 +1464,7 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
             const currentDateString = current.toDateString();
             const exceptionKey = `${event.id}_${currentDateString}`;
             
+            
             // 제외된 날짜인지 확인
             if (!excludedDates.has(currentDateString)) {
                 // 수정된 인스턴스가 있는지 확인
@@ -1491,6 +1498,7 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                         originalEventId: event.id
                     });
                 }
+                count++;
             }
         }
         
@@ -1532,12 +1540,27 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                 current.setMonth(current.getMonth() + monthInterval);
                 break;
         }
-        
-        count++;
-        
+              
+        // UNTIL 값을 제대로 파싱
+        let untilDate = null;
+        if (rules.UNTIL) {
+            if (rules.UNTIL.length === 8) {
+                // YYYYMMDD 형식
+                const year = parseInt(rules.UNTIL.substring(0, 4));
+                const month = parseInt(rules.UNTIL.substring(4, 6)) - 1;
+                const day = parseInt(rules.UNTIL.substring(6, 8));
+                untilDate = new Date(year, month, day, 23, 59, 59);
+            } else if (rules.UNTIL.length >= 15) {
+                // YYYYMMDDTHHMMSS[Z] 형식
+                untilDate = parseIcalDate(rules.UNTIL);
+            }
+        }
+
+
         // 제한 조건 체크
         if (rules.COUNT && count >= parseInt(rules.COUNT)) break;
-        if (rules.UNTIL && current > new Date(rules.UNTIL)) break;
+        if (untilDate && current > untilDate) break;
+
     }
     
     console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
