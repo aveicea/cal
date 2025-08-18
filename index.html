@@ -375,7 +375,7 @@ body {
   border: 1px solid #ddd;
 }
 
-.calendar-container {
+.calendar- {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -398,17 +398,17 @@ body {
   gap: 1px;
   background: #e0e0e0;
   border: 1px solid #e0e0e0;
-  height: 100%;
+  height: calc(100vh - 150px);
   min-height: 250px;
-  height: calc(100vh - 200px);
+  max-height: 400px;
 }
 
 .calendar-day {
   background: white;
-  min-height: 80px;
-  padding: 6px;
+  min-height: 40px;
+  padding: 4px;
   position: relative;
-  font-size: 12px;
+  font-size: 11px;
   border: none;
 }
 
@@ -442,18 +442,18 @@ body {
 .time-based-view {
   display: grid;
   background: white;
-  height: 100%;
-  overflow: hidden;
+  min-height: 600px;  /* 실제 필요한 높이로 설정 */
+  overflow: visible;  /* 부모가 스크롤 처리하도록 */
 }
 
 .week-view {
-  grid-template-columns: 70px repeat(7, 1fr);
-  grid-template-rows: 40px repeat(24, minmax(30px, 1fr)); /* 6시~23시 = 18시간 */
+  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-rows: 35px repeat(18, 25px);
 }
 
 .day-view {
-  grid-template-columns: 70px 1fr;
-  grid-template-rows: 40px repeat(24, minmax(30px, 1fr)); /* 6시~23시 = 18시간 */
+  grid-template-columns: 60px 1fr;
+  grid-template-rows: 35px repeat(18, 25px);
 }
 
 .time-slot {
@@ -1614,8 +1614,8 @@ function renderWeekView() {
 
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '100%';
-  container.style.overflow = 'auto';
+  container.style.height = '600%';
+  container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view week-view';
@@ -1779,7 +1779,7 @@ function renderWeekView() {
           eventDiv.style.zIndex = 100 - currentEventIndex;
           
           // 정확한 위치와 높이 계산
-          const cellHeight = 50; // 그리드 행 높이
+          const cellHeight = 25; // 그리드 행 높이
           const topOffset = (startPosition - startSlot) * cellHeight;
           const height = (clampedEndPosition - startPosition) * cellHeight;
           
