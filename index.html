@@ -428,7 +428,8 @@ body {
 }
 
 .calendar-day.today {
-  background: #e3f2fd;
+  background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
+  color: white;  /* 추가 - 글씨색을 흰색으로 */
 }
 
 .day-number {
@@ -514,8 +515,8 @@ body {
 }
 
 .week-header.today {
-  background: #e3f2fd;
-  color: var(--accent-color, #4285f4);
+  background: var(--accent-color, #4285f4);  /* 기존: #e3f2fd */
+  color: white;  /* 기존: var(--accent-color, #4285f4) */
   font-weight: 600;
 }
 
@@ -1627,7 +1628,7 @@ function renderWeekView() {
 
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '600%';
+  container.style.height = '600px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
@@ -1636,6 +1637,7 @@ function renderWeekView() {
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
+  grid.style.height = '500px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -1929,7 +1931,8 @@ function renderDayView() {
   dayHeader.className = 'week-header';
   const today = new Date();
   if (currentDate.toDateString() === today.toDateString()) {
-    dayHeader.style.backgroundColor = '#e3f2fd';
+    dayHeader.style.backgroundColor = accentColor;  // 기존: '#e3f2fd'
+    dayHeader.style.color = 'white';                // 추가
   } else {
     dayHeader.style.backgroundColor = '#f5f5f5';
   }
