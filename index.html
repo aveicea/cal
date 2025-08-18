@@ -1476,14 +1476,29 @@ function renderMonthView() {
   calendarContent.appendChild(grid);
 }
 
-// 공통 상수
-const SLOT_START_HOUR = 6;
-const SLOT_END_HOUR = 23;
-const SLOT_COUNT = SLOT_END_HOUR - SLOT_START_HOUR + 1;
+// 공통 상수 (24시간 기준으로 변경)
+const SLOT_START_HOUR = 6;  // 오전 6시 시작
+const TOTAL_HOURS = 24;     // 24시간 표시
+const SLOT_COUNT = TOTAL_HOURS;
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 주간 뷰 렌더링 (CSS Grid)
+// 시간 표시 헬퍼 함수 (24시간 -> 실제 시간 변환)
+function getDisplayHour(slotIndex) {
+  const hour = (SLOT_START_HOUR + slotIndex) % 24;
+  return hour;
+}
+
+// 실제 시간 -> 슬롯 인덱스 변환
+function getSlotIndex(hour) {
+  if (hour >= SLOT_START_HOUR) {
+    return hour - SLOT_START_HOUR;  // 6-23시: 0-17
+  } else {
+    return hour + (24 - SLOT_START_HOUR);  // 0-5시: 18-23
+  }
+}
+
+// 주간 뷰 렌더링 (24시간 버전)
 function renderWeekView() {
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
@@ -1496,8 +1511,8 @@ function renderWeekView() {
   const grid = document.createElement('div');
   grid.className = 'time-based-view week-view';
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`; // 1열(시간) + 7요일
-  grid.style.gridTemplateRows = `40px repeat(${SLOT_COUNT}, 50px)`; // 1행(헤더) + 시간수
+  grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
+  grid.style.gridTemplateRows = `40px repeat(${SLOT_COUNT}, 50px)`;
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -1515,7 +1530,7 @@ function renderWeekView() {
     const header = document.createElement('div');
     header.className = 'week-header';
     header.style.gridRow = '1';
-    header.style.gridColumn = `${i + 2}`; // 두번째 열부터
+    header.style.gridColumn = `${i + 2}`;
 
     if (date.toDateString() === (new Date()).toDateString()) {
       header.classList.add('today');
@@ -1532,68 +1547,83 @@ function renderWeekView() {
     grid.appendChild(header);
   }
 
-  // 시간 라벨 및 각 칸 배경(이벤트 담기용)
-  for (let row = 0; row < SLOT_COUNT; row++) {
-    const hour = SLOT_START_HOUR + row;
+  // 24시간 슬롯 생성
+  for (let slotIndex = 0; slotIndex < SLOT_COUNT; slotIndex++) {
+    const displayHour = getDisplayHour(slotIndex);
+    
     // 시간 라벨
     const timeSlot = document.createElement('div');
     timeSlot.className = 'time-slot';
-    timeSlot.textContent = `${hour}:00`;
-    timeSlot.style.gridRow = `${row + 2}`;
+    
+    // 자정 이후는 다음날 표시
+    if (slotIndex >= 18) { // 0-5시 (자정 이후)
+      timeSlot.textContent = `+1 ${displayHour.toString().padStart(2, '0')}:00`;
+      timeSlot.style.color = '#666';
+      timeSlot.style.fontSize = '0.85em';
+    } else {
+      timeSlot.textContent = `${displayHour.toString().padStart(2, '0')}:00`;
+    }
+    
+    timeSlot.style.gridRow = `${slotIndex + 2}`;
     timeSlot.style.gridColumn = '1';
     grid.appendChild(timeSlot);
 
-    // 각 요일별 기본 배경(빈 칸)
+    // 각 요일별 기본 배경
     for (let day = 0; day < 7; day++) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
-      cell.style.gridRow = `${row + 2}`;
+      
+      // 자정 이후 시간대는 다른 스타일
+      if (slotIndex >= 18) {
+        cell.classList.add('next-day');
+      }
+      
+      cell.style.gridRow = `${slotIndex + 2}`;
       cell.style.gridColumn = `${day + 2}`;
       grid.appendChild(cell);
     }
   }
 
-  // 이벤트 렌더링 (이벤트마다 여러 시간대를 걸쳐 한 번만 생성)
+  // 이벤트 렌더링
   for (let day = 0; day < 7; day++) {
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate() + day);
 
-    const dayEvents = getAllEventsForDate(date);
+    const dayEvents = getAllEventsForDateRange(date);
     dayEvents.forEach((event, index) => {
-      // 종일 이벤트: week-header 바로 밑(2번째 row)에 붙임
       if (event.time === '종일') {
         const eventDiv = document.createElement('div');
         eventDiv.className = 'all-day-event';
         eventDiv.style.gridRow = '2';
         eventDiv.style.gridColumn = `${day + 2}`;
-        eventDiv.style.margin = '2px 0';
+        eventDiv.style.margin = '2px';
         eventDiv.style.backgroundColor = event.color;
         eventDiv.textContent = event.title;
         eventDiv.title = `${event.title}\n캘린더: ${event.calendarName}`;
         grid.appendChild(eventDiv);
       } else {
-        // 시간 이벤트: 시작~끝까지 row를 계산해 네모로 표시
         const startHour = getEventHour(event.startTime);
         const endHour = getEventHour(event.endTime);
         const startMinute = getEventMinute(event.startTime);
         const endMinute = getEventMinute(event.endTime);
 
-        // 행 계산 (헤더: 1, 종일: 2, 실제 시간은 3부터 시작)
-        const gridRowStart = (startHour - SLOT_START_HOUR) + 2 + (startMinute > 0 ? 1 : 0);
-        // 소수점 단위 row 지원이 어려우면 그냥 시간 단위로만
-        let gridRowEnd = (endHour - SLOT_START_HOUR) + 2;
-        // 분단위가 있으면 다음칸까지 확장
-        if (endMinute > 0) gridRowEnd += 1;
+        const startSlot = getSlotIndex(startHour);
+        let endSlot = getSlotIndex(endHour);
+        
+        // 분이 있으면 다음 슬롯까지
+        if (endMinute > 0) endSlot += 1;
+        
+        // 시간 순서 처리 (예: 23:00-01:00)
+        if (endSlot <= startSlot) endSlot += 24;
 
-        // 최소 높이 반영: grid-row 대신 absolute로 height/fraction 쓰고 싶다면 추가 스타일 조정
         const eventDiv = document.createElement('div');
         eventDiv.className = 'time-event';
-        eventDiv.style.gridRow = `${gridRowStart} / ${Math.max(gridRowEnd, gridRowStart + 1)}`;
+        eventDiv.style.gridRow = `${startSlot + 2} / ${Math.max(endSlot + 2, startSlot + 3)}`;
         eventDiv.style.gridColumn = `${day + 2}`;
         eventDiv.style.backgroundColor = event.color;
-        eventDiv.style.margin = '2px 2px';
-        eventDiv.style.position = 'relative'; // 여러개 겹침 약간 오프셋
-        eventDiv.style.left = `${4 + index * 2}px`;
+        eventDiv.style.margin = '1px 2px';
+        eventDiv.style.position = 'relative';
+        eventDiv.style.left = `${index * 3}px`;
         eventDiv.style.zIndex = index + 1;
         eventDiv.textContent = event.title;
         eventDiv.title = `${event.title}\n시간: ${event.startTime} - ${event.endTime}\n캘린더: ${event.calendarName}`;
@@ -1608,7 +1638,7 @@ function renderWeekView() {
   calendarContent.appendChild(container);
 }
 
-// 일간 뷰 렌더링 (CSS Grid)
+// 일간 뷰 렌더링 (24시간 버전)
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
@@ -1643,33 +1673,44 @@ function renderDayView() {
   dayHeader.style.gridColumn = '2';
   grid.appendChild(dayHeader);
 
-  // 시간 라벨 & 셀 기본 배경
-  for (let row = 0; row < SLOT_COUNT; row++) {
-    const hour = SLOT_START_HOUR + row;
-    // 라벨
+  // 24시간 슬롯
+  for (let slotIndex = 0; slotIndex < SLOT_COUNT; slotIndex++) {
+    const displayHour = getDisplayHour(slotIndex);
+    
     const timeSlot = document.createElement('div');
     timeSlot.className = 'time-slot';
-    timeSlot.textContent = `${hour}:00`;
-    timeSlot.style.gridRow = `${row + 2}`;
+    
+    if (slotIndex >= 18) {
+      timeSlot.textContent = `+1 ${displayHour.toString().padStart(2, '0')}:00`;
+      timeSlot.style.color = '#666';
+      timeSlot.style.fontSize = '0.85em';
+    } else {
+      timeSlot.textContent = `${displayHour.toString().padStart(2, '0')}:00`;
+    }
+    
+    timeSlot.style.gridRow = `${slotIndex + 2}`;
     timeSlot.style.gridColumn = '1';
     grid.appendChild(timeSlot);
 
     const cell = document.createElement('div');
     cell.className = 'day-cell';
-    cell.style.gridRow = `${row + 2}`;
+    if (slotIndex >= 18) {
+      cell.classList.add('next-day');
+    }
+    cell.style.gridRow = `${slotIndex + 2}`;
     cell.style.gridColumn = '2';
     grid.appendChild(cell);
   }
 
-  // 이벤트 (한 번만, 칸 수만큼 grid row로)
-  const dayEvents = getAllEventsForDate(currentDate);
+  // 이벤트
+  const dayEvents = getAllEventsForDateRange(currentDate);
   dayEvents.forEach((event, index) => {
     if (event.time === '종일') {
       const eventDiv = document.createElement('div');
       eventDiv.className = 'all-day-event';
       eventDiv.style.gridRow = '2';
       eventDiv.style.gridColumn = '2';
-      eventDiv.style.margin = '2px 0';
+      eventDiv.style.margin = '2px';
       eventDiv.style.backgroundColor = event.color;
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n캘린더: ${event.calendarName}`;
@@ -1680,18 +1721,19 @@ function renderDayView() {
       const startMinute = getEventMinute(event.startTime);
       const endMinute = getEventMinute(event.endTime);
 
-      const gridRowStart = (startHour - SLOT_START_HOUR) + 2 + (startMinute > 0 ? 1 : 0);
-      let gridRowEnd = (endHour - SLOT_START_HOUR) + 2;
-      if (endMinute > 0) gridRowEnd += 1;
+      const startSlot = getSlotIndex(startHour);
+      let endSlot = getSlotIndex(endHour);
+      if (endMinute > 0) endSlot += 1;
+      if (endSlot <= startSlot) endSlot += 24;
 
       const eventDiv = document.createElement('div');
       eventDiv.className = 'time-event';
-      eventDiv.style.gridRow = `${gridRowStart} / ${Math.max(gridRowEnd, gridRowStart + 1)}`;
+      eventDiv.style.gridRow = `${startSlot + 2} / ${Math.max(endSlot + 2, startSlot + 3)}`;
       eventDiv.style.gridColumn = '2';
       eventDiv.style.backgroundColor = event.color;
-      eventDiv.style.margin = '2px 2px';
+      eventDiv.style.margin = '1px 2px';
       eventDiv.style.position = 'relative';
-      eventDiv.style.left = `${4 + index * 2}px`;
+      eventDiv.style.left = `${index * 3}px`;
       eventDiv.style.zIndex = index + 1;
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n시간: ${event.startTime} - ${event.endTime}\n캘린더: ${event.calendarName}`;
@@ -1704,17 +1746,51 @@ function renderDayView() {
   calendarContent.appendChild(container);
 }
 
-// 시간 파싱 관련 함수 및 이벤트 취득 함수 (원본과 동일)
+// 24시간 범위의 이벤트 가져오기 (당일 + 다음날 새벽)
+function getAllEventsForDateRange(baseDate) {
+  const allEvents = [];
+  
+  // 당일 이벤트
+  const currentDayEvents = getAllEventsForDate(baseDate);
+  
+  // 다음날 새벽 이벤트 (0-5시)
+  const nextDate = new Date(baseDate);
+  nextDate.setDate(baseDate.getDate() + 1);
+  const nextDayEarlyEvents = getAllEventsForDate(nextDate).filter(event => {
+    if (event.time === '종일') return false;
+    const hour = getEventHour(event.startTime);
+    return hour >= 0 && hour <= 5;  // 새벽 0-5시만
+  });
+
+  allEvents.push(...currentDayEvents, ...nextDayEarlyEvents);
+  
+  // 시간순 정렬
+  allEvents.sort((a, b) => {
+    if (a.time === '종일' && b.time !== '종일') return -1;
+    if (a.time !== '종일' && b.time === '종일') return 1;
+    if (a.time === '종일' && b.time === '종일') return 0;
+    
+    const aSlot = getSlotIndex(getEventHour(a.startTime));
+    const bSlot = getSlotIndex(getEventHour(b.startTime));
+    return aSlot - bSlot;
+  });
+  
+  return allEvents;
+}
+
+// 기존 헬퍼 함수들 (동일)
 function getEventHour(timeString) {
   if (timeString === '종일') return SLOT_START_HOUR;
   const parts = timeString.split(':');
   return parseInt(parts[0], 10) || 0;
 }
+
 function getEventMinute(timeString) {
   if (timeString === '종일') return 0;
   const parts = timeString.split(':');
-  return parseInt(parts, 10) || 0;
+  return parseInt(parts[1], 10) || 0;
 }
+
 function getAllEventsForDate(date) {
   const allEvents = [];
   calendars.forEach(calendar => {
@@ -1731,15 +1807,9 @@ function getAllEventsForDate(date) {
       });
     });
   });
-  // 종일 > 그 외 시간순
-  allEvents.sort((a, b) => {
-    if (a.time === '종일' && b.time !== '종일') return -1;
-    if (a.time !== '종일' && b.time === '종일') return 1;
-    if (a.time === '종일' && b.time === '종일') return 0;
-    return a.time.localeCompare(b.time);
-  });
   return allEvents;
 }
+
 
 
 // 캘린더 추가
