@@ -1621,7 +1621,7 @@ function renderWeekView() {
   grid.className = 'time-based-view week-view';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
-  grid.style.gridTemplateRows = `40px repeat(${SLOT_COUNT}, 50px)`;
+  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
 
   // 시간 헤더
@@ -1897,7 +1897,7 @@ function renderDayView() {
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
-  grid.style.gridTemplateRows = `40px repeat(${SLOT_COUNT}, 50px)`;
+  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
 
   // 헤더들 (이전과 동일)
