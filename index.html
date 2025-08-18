@@ -1542,30 +1542,43 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
         }
               
         // UNTIL 값을 제대로 파싱
+        // 기존 코드를 이 부분으로 교체
         let untilDate = null;
         if (rules.UNTIL) {
-            if (rules.UNTIL.length === 8) {
-                // YYYYMMDD 형식
-                const year = parseInt(rules.UNTIL.substring(0, 4));
-                const month = parseInt(rules.UNTIL.substring(4, 6)) - 1;
-                const day = parseInt(rules.UNTIL.substring(6, 8));
-                untilDate = new Date(year, month, day, 23, 59, 59);
-            } else if (rules.UNTIL.length >= 15) {
-                // YYYYMMDDTHHMMSS[Z] 형식
-                untilDate = parseIcalDate(rules.UNTIL);
+            try {
+                if (rules.UNTIL.length === 8) {
+                    // YYYYMMDD 형식
+                    const year = parseInt(rules.UNTIL.substring(0, 4));
+                    const month = parseInt(rules.UNTIL.substring(4, 6)) - 1;
+                    const day = parseInt(rules.UNTIL.substring(6, 8));
+                    untilDate = new Date(year, month, day, 23, 59, 59);
+                } else if (rules.UNTIL.includes('T')) {
+                    // YYYYMMDDTHHMMSS[Z] 형식
+                    const parsed = parseIcalDate(rules.UNTIL);
+                    if (parsed) {
+                        untilDate = new Date(parsed.date + 'T' + (parsed.time === '종일' ? '23:59:59' : parsed.time + ':00'));
+                    }
+                }
+                addDebugLog(`UNTIL 파싱 결과: ${untilDate ? untilDate.toISOString() : '실패'}`);
+            } catch (e) {
+                addDebugLog(`UNTIL 파싱 오류: ${e.message}`);
             }
         }
 
-
-        // 제한 조건 체크
-        if (rules.COUNT && count >= parseInt(rules.COUNT)) break;
-        if (untilDate && current > untilDate) break;
-
-    }
-    
-    console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
-    return occurrences;
-}
+        // 제한 조건 체크를 루프 끝으로 이동 (라인 약 620 근처)
+        if (rules.COUNT && count >= parseInt(rules.COUNT)) {
+            addDebugLog(`COUNT 제한 도달: ${count}`);
+            break;
+        }
+        if (untilDate && current > untilDate) {
+            addDebugLog(`UNTIL 날짜 도달: ${current.toISOString()} > ${untilDate.toISOString()}`);
+            break;
+        }
+            }
+            
+            console.log(`Generated ${occurrences.length} occurrences for ${event.title}`);
+            return occurrences;
+      } 
 
 
 // iCal 텍스트 디코딩
@@ -2428,7 +2441,22 @@ function getAllEventsForDate(date) {
       });
     });
   });
+  
   return allEvents;
+
+    // 함수 마지막에 추가
+  const uniqueEvents = [];
+  const seenEvents = new Set();
+
+  allEvents.forEach(event => {
+      const key = `${event.title}_${event.date}_${event.startTime}_${event.endTime}`;
+      if (!seenEvents.has(key)) {
+          seenEvents.add(key);
+          uniqueEvents.push(event);
+      }
+  });
+
+  return uniqueEvents;
 }
 
 
