@@ -1065,13 +1065,13 @@ async function loadCalendarEvents(calendar) {
 // iCal 이벤트 로드
 async function loadIcalEvents(calendar) {
   const proxies = [
-  `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(calendar.url)}`,
-  `https://cors-proxy.fringe.zone/${calendar.url}`,
-  `https://api.allorigins.win/get?url=${encodeURIComponent(calendar.url)}`,
-  `https://corsproxy.io/?${encodeURIComponent(calendar.url)}`,
-  `https://cors.sh/${calendar.url}`
-];
-
+    `https://cors-anywhere.herokuapp.com/${calendar.url}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(calendar.url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(calendar.url)}`,
+    `https://cors.sh/${calendar.url}`,
+    `https://proxy.cors.sh/${calendar.url}`
+  ];
+  
   let lastError = null;
   
   for (const proxyUrl of proxies) {
