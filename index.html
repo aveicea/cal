@@ -1293,6 +1293,7 @@ function parseIcalData(icalText) {
           startTime: currentEvent.startTime || currentEvent.time || '종일',
           endTime: currentEvent.endTime || currentEvent.time || '종일',
           description: currentEvent.description || '',
+          location: currentEvent.location || '', // 이 줄 추가
           rrule: currentEvent.rrule
         };
         
@@ -1835,8 +1836,7 @@ function renderMonthView() {
       eventDiv.className = 'event';
       eventDiv.style.backgroundColor = event.color;
       eventDiv.textContent = event.title;
-      eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.description ? '\n설명: ' + event.description : ''}`;
-      cell.appendChild(eventDiv);
+      eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;      cell.appendChild(eventDiv);
     });
     
     // 더 많은 이벤트가 있으면 표시
@@ -1899,11 +1899,11 @@ function applyRoundedCorners(eventsInSlot) {
     } else {
       // 겹치는 경우에도 각 이벤트마다 적당한 둥근 모서리 적용
       if (isFirst) {
-        borderRadius = '6px 3px 3px 6px';  // 왼쪽만 완전히 둥글게
+        borderRadius = '6px 6px 6px 6px';  // 완전히 둥글게
       } else if (isLast) {
-        borderRadius = '3px 6px 6px 3px';  // 오른쪽만 완전히 둥글게
+        borderRadius = '6px 6px 6px 6px';  // 완전히 둥글게
       } else {
-        borderRadius = '6px';  // 중간은 약간 둥글게
+        borderRadius = '6px';  // 중간 둥글게
       }
       eventDiv.style.borderRadius = borderRadius;
     }
@@ -2094,8 +2094,7 @@ function renderWeekView() {
           eventDiv.style.right = '2px';
           eventDiv.style.height = 'calc(100% - 4px)';
           eventDiv.textContent = splitEvent.title;
-          eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-                  //추가
+          eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;                  //추가
           eventDiv.style.wordWrap = 'break-word';
           eventDiv.style.wordBreak = 'break-word';
           eventDiv.style.lineHeight = '1.2';
@@ -2156,8 +2155,7 @@ function renderWeekView() {
           eventDiv.style.width = `${eventWidth}%`;
           
           eventDiv.textContent = splitEvent.title;
-          eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-
+          eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
           // 시작 슬롯의 셀에 추가
           if (dayCells[day][startSlot]) {
             dayCells[day][startSlot].appendChild(eventDiv);
@@ -2234,8 +2232,7 @@ function renderWeekView() {
             eventDiv.style.width = `${eventWidth}%`;
             
             eventDiv.textContent = splitEvent.title;
-            eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-
+            eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
             if (dayCells[day][startSlot]) {
               dayCells[day][startSlot].appendChild(eventDiv);
               if (!slotEventDivs[startSlot]) slotEventDivs[startSlot] = [];
@@ -2363,8 +2360,7 @@ function renderDayView() {
         eventDiv.style.right = '2px';
         eventDiv.style.height = 'calc(100% - 4px)';
         eventDiv.textContent = splitEvent.title;
-        eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-                //추가
+        eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;                //추가
         eventDiv.style.wordWrap = 'break-word';
         eventDiv.style.wordBreak = 'break-word';
         eventDiv.style.lineHeight = '1.2';
@@ -2420,8 +2416,7 @@ function renderDayView() {
         eventDiv.style.width = `${eventWidth}%`;
         
         eventDiv.textContent = splitEvent.title;
-        eventDiv.title = `${splitEvent.title}\n시간: ${splitEvent.startTime} - ${splitEvent.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-
+        eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
         if (dayCells[startSlot]) {
           dayCells[startSlot].appendChild(eventDiv);
           slotEventDivs[startSlot].push(eventDiv);
