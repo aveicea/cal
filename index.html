@@ -46,6 +46,12 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   color: #666;
+  width: 32px;  /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
+  height: 32px; /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* 수정 - padding 제거해서 크기 맞춤 */
 }
 
 .view-btn-group .view-btn:last-child {
@@ -92,9 +98,14 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: #333;
-  min-width: 120px;
+  min-width: 80px;   /* 수정 - 120px에서 80px로 줄임 */
+  max-width: 80px;   /* 추가 - 최대 넓이 제한 */
   text-align: center;
   margin: 0 5px;     /* 추가 - 좌우 여백 */
+  height: 20px;      /* 추가 - 높이 제한 */
+  display: flex;     /* 추가 - flexbox로 중앙 정렬 */
+  align-items: center; /* 추가 - 수직 중앙 정렬 */
+  justify-content: center; /* 추가 - 수평 중앙 정렬 */
 }
 
 .settings-btn {
@@ -401,7 +412,7 @@ body {
   height: calc(100vh - 120px);  /* 이 줄 추가 */
   min-height: 400px;  /* 이 줄 추가 */
 }
-
+  
 /* 월간 뷰 */
 .calendar-grid.month-view {
   display: grid;
