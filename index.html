@@ -545,10 +545,12 @@ body {
   font-size: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  cursor: pointer;
-  z-index: 1;
+  white-space: normal;  /* nowrap → normal로 변경 */
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.2;
+  overflow: visible;  /* hidden → visible로 변경 */
+  text-overflow: clip;  /* ellipsis → clip으로 변경 */
 }
 
 .time-event:hover {
@@ -1885,26 +1887,23 @@ function applyRoundedCorners(eventsInSlot) {
     const isFirst = index === 0;
     const isLast = index === eventsInSlot.length - 1;
     
+    // 모든 이벤트에 기본 둥근 모서리 적용
     if (eventsInSlot.length === 1) {
-      // 혼자 있는 이벤트는 모든 모서리 둥글게
       eventDiv.style.borderRadius = '6px';
     } else {
-      // 여러 이벤트가 겹칠 때
-      let borderRadius = '';
-      
+      // 겹치는 경우에도 각 이벤트마다 적당한 둥근 모서리 적용
       if (isFirst) {
-        // 첫 번째 이벤트: 왼쪽 모서리만 둥글게
-        borderRadius = '6px 0 0 6px';
+        borderRadius = '6px 3px 3px 6px';  // 왼쪽만 완전히 둥글게
       } else if (isLast) {
-        // 마지막 이벤트: 오른쪽 모서리만 둥글게
-        borderRadius = '0 6px 6px 0';
+        borderRadius = '3px 6px 6px 3px';  // 오른쪽만 완전히 둥글게
       } else {
-        // 중간 이벤트: 모서리 안 둥글게
-        borderRadius = '0';
+        borderRadius = '3px';  // 중간은 약간 둥글게
       }
-      
       eventDiv.style.borderRadius = borderRadius;
     }
+    
+    // 추가: 그림자 효과로 입체감 부여
+    eventDiv.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
   });
 }
 
@@ -2080,9 +2079,9 @@ function renderWeekView() {
           eventDiv.style.fontSize = '0.6em';
           eventDiv.style.borderRadius = '6px';
           eventDiv.style.margin = '2px';
-          eventDiv.style.overflow = 'hidden';
-          eventDiv.style.textOverflow = 'ellipsis';
-          eventDiv.style.whiteSpace = 'nowrap';
+          eventDiv.style.overflow = 'visible';
+          eventDiv.style.textOverflow = 'clip';
+          eventDiv.style.whiteSpace = 'normal';
           eventDiv.style.position = 'absolute';
           eventDiv.style.top = '2px';
           eventDiv.style.left = '2px';
@@ -2090,6 +2089,11 @@ function renderWeekView() {
           eventDiv.style.height = 'calc(100% - 4px)';
           eventDiv.textContent = splitEvent.title;
           eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
+                  //추가
+          eventDiv.style.wordWrap = 'break-word';
+          eventDiv.style.wordBreak = 'break-word';
+          eventDiv.style.lineHeight = '1.2';
+          eventDiv.style.minHeight = '20px';     // 최소 높이 보장
           
           dayCells[day][0].appendChild(eventDiv);
         } else {
@@ -2115,11 +2119,16 @@ function renderWeekView() {
           eventDiv.style.color = 'white';
           eventDiv.style.padding = '2px 6px';
           eventDiv.style.fontSize = '0.6em';
-          eventDiv.style.overflow = 'hidden';
-          eventDiv.style.textOverflow = 'ellipsis';
-          eventDiv.style.whiteSpace = 'nowrap';
+          eventDiv.style.overflow = 'visible';
+          eventDiv.style.textOverflow = 'clip';
+          eventDiv.style.whiteSpace = 'normal';
           eventDiv.style.position = 'absolute';
           eventDiv.style.boxSizing = 'border-box';
+                  //추가
+          eventDiv.style.wordWrap = 'break-word';
+          eventDiv.style.wordBreak = 'break-word';
+          eventDiv.style.lineHeight = '1.2';
+          eventDiv.style.minHeight = '20px';     // 최소 높이 보장
           
           // z-index: 나중에 추가된 이벤트(아래쪽)가 더 위로 오도록
           eventDiv.style.zIndex = 100 + currentEventIndex;
@@ -2191,12 +2200,17 @@ function renderWeekView() {
             eventDiv.style.color = '#333';
             eventDiv.style.padding = '2px 6px';
             eventDiv.style.fontSize = '0.6em';
-            eventDiv.style.overflow = 'hidden';
-            eventDiv.style.textOverflow = 'ellipsis';
-            eventDiv.style.whiteSpace = 'nowrap';
+            eventDiv.style.overflow = 'visible';
+            eventDiv.style.textOverflow = 'clip';
+            eventDiv.style.whiteSpace = 'normal';
             eventDiv.style.position = 'absolute';
             eventDiv.style.boxSizing = 'border-box';
             eventDiv.style.zIndex = 100 + currentEventIndex;
+                    //추가
+            eventDiv.style.wordWrap = 'break-word';
+            eventDiv.style.wordBreak = 'break-word';
+            eventDiv.style.lineHeight = '1.2';
+            eventDiv.style.minHeight = '20px';     // 최소 높이 보장
             
             const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외
             const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
@@ -2334,9 +2348,9 @@ function renderDayView() {
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.borderRadius = '6px';
         eventDiv.style.margin = '2px';
-        eventDiv.style.overflow = 'hidden';
-        eventDiv.style.textOverflow = 'ellipsis';
-        eventDiv.style.whiteSpace = 'nowrap';
+        eventDiv.style.overflow = 'visible';
+        eventDiv.style.textOverflow = 'clip';
+        eventDiv.style.whiteSpace = 'normal';
         eventDiv.style.position = 'absolute';
         eventDiv.style.top = '2px';
         eventDiv.style.left = '2px';
@@ -2344,6 +2358,11 @@ function renderDayView() {
         eventDiv.style.height = 'calc(100% - 4px)';
         eventDiv.textContent = splitEvent.title;
         eventDiv.title = `${splitEvent.title}\n캘린더: ${event.calendarName}`;
+                //추가
+        eventDiv.style.wordWrap = 'break-word';
+        eventDiv.style.wordBreak = 'break-word';
+        eventDiv.style.lineHeight = '1.2';
+        eventDiv.style.minHeight = '20px';     // 최소 높이 보장
         
         dayCells[0].appendChild(eventDiv);
       } else {
@@ -2367,12 +2386,17 @@ function renderDayView() {
         eventDiv.style.color = '#333';
         eventDiv.style.padding = '2px 6px';
         eventDiv.style.fontSize = '0.6em';
-        eventDiv.style.overflow = 'hidden';
-        eventDiv.style.textOverflow = 'ellipsis';
-        eventDiv.style.whiteSpace = 'nowrap';
+        eventDiv.style.overflow = 'visible';
+        eventDiv.style.textOverflow = 'clip';
+        eventDiv.style.whiteSpace = 'normal';
         eventDiv.style.position = 'absolute';
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.zIndex = 100 + currentEventIndex;
+        //추가
+        eventDiv.style.wordWrap = 'break-word';
+        eventDiv.style.wordBreak = 'break-word';
+        eventDiv.style.lineHeight = '1.2';
+        eventDiv.style.minHeight = '20px';     // 최소 높이 보장
         
         const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외 
         const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
