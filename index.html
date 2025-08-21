@@ -1623,7 +1623,8 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                     const occurrenceEnd = new Date(current.getTime() + eventDuration);
                     
                     // 날짜 형식 맞추기
-                    const eventDate = occurrenceStart.toISOString().split('T')[0];
+                    // 올바른 날짜 계산
+                    const eventDate = current.toISOString().split('T')[0];
                     const startTimeStr = event.startTime || event.time || '종일';
                     const endTimeStr = event.endTime || event.time || '종일';
                     
@@ -1760,7 +1761,8 @@ function parseIcalDate(dateString) {
       
       // UTC 시간인 경우 (Z로 끝남) 로컬 시간으로 변환
       if (dateString.endsWith('Z')) {
-  // UTC 시간이지만 하루종일 일정의 경우 날짜만 중요하므로 로컬 날짜 유지
+        date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+      } else {
         date = new Date(year, month - 1, day, hour, minute);
       }
       
@@ -2675,8 +2677,8 @@ function getAllEventsForDate(date) {
     }
 
     const events = calendar.events.filter(event => {
-      const eventDate = new Date(event.date + 'T00:00:00');
-      return eventDate.toDateString() === date.toDateString();
+      // 문자열 비교로 변경하여 시간대 문제 방지
+      return event.date === date.toISOString().split('T')[0];
     });
     events.forEach(event => {
       allEvents.push({
