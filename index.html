@@ -827,6 +827,38 @@
     background: rgba(0,0,0,0.1);
   }
 
+  .toggle-content {
+  display: none;
+  margin-top: 8px;
+  overflow-x: hidden; /* 가로 스크롤 숨김 */
+  word-wrap: break-word; /* 긴 텍스트 줄바꿈 */
+}
+
+  .toggle-content.expanded {
+    display: block;
+    max-height: 300px; /* 최대 높이 제한 */
+    overflow-y: auto; /* 세로 스크롤만 허용 */
+  }
+
+  /* 스크롤바 스타일링 (선택사항) */
+  .toggle-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .toggle-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .toggle-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .toggle-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
 </style>
 </head>
 <body>
