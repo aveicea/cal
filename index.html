@@ -751,6 +751,34 @@
     background-color: #e8e8e8;
   }
 
+  .toggle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+  .toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: #666;
+  }
+
+  .toggle-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  .toggle-content {
+    display: none;
+    margin-top: 10px;
+  }
+
+  .toggle-content.expanded {
+    display: block;
+  }
+
 </style>
 </head>
 <body>
@@ -774,8 +802,11 @@
     <div class="settings-title">멀티 캘린더 설정</div>
 
     <div class="view-calendar-section">
-      <div class="color-picker-title">뷰별 캘린더 선택</div>
-      <div id="viewCalendarSettings">
+      <div class="toggle-header" onclick="toggleViewCalendarSettings()">
+        <div class="color-picker-title">뷰별 캘린더 선택</div>
+        <div class="toggle-icon" id="viewToggleIcon">▼</div>
+      </div>
+      <div class="toggle-content" id="viewCalendarSettings">
         <!-- 동적으로 생성됨 -->
       </div>
     </div>
@@ -2718,6 +2749,15 @@ function saveToStorage() {
     addDebugLog(`저장 실패: ${e.message}`);
   }
 }
+
+function toggleViewCalendarSettings() {
+  const content = document.getElementById('viewCalendarSettings');
+  const icon = document.getElementById('viewToggleIcon');
+  
+  content.classList.toggle('expanded');
+  icon.classList.toggle('expanded');
+}
+
 
 // 캘린더 설정 내보내기
 function exportCalendarSettings() {
