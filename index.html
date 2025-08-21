@@ -813,6 +813,9 @@
 
     <div class="color-picker-group">
       <div class="color-picker-title">테마 색상</div>
+      <div class="toggle-icon" id="themeColorIcon">▼</div>
+    </div>
+    <div class="toggle-content" id="themeColorContent">
       <div class="color-input-row">
         <input type="color" class="color-picker-input" id="colorPicker" onchange="updateColorFromPicker()">
         <input type="text" class="color-text-input" id="colorText" placeholder="#D1D1D1" oninput="updateColorFromText()" maxlength="7">
@@ -829,6 +832,9 @@
     
     <div class="calendar-list-section">
       <div class="color-picker-title">연동된 캘린더 목록</div>
+      <div class="toggle-icon" id="calendarListIcon">▼</div>
+    </div>
+    <div class="toggle-content" id="calendarListContent">
       <button class="nav-btn" onclick="refreshAllCalendars()" title="모든 캘린더 새로고침">🔄</button>
       <div id="calendarList">
         <p style="color: #666; font-size: 12px; text-align: center; padding: 20px;">
@@ -839,6 +845,9 @@
     
     <div class="add-calendar-section">
       <div class="color-picker-title">캘린더 추가</div>
+      <div class="toggle-icon" id="addCalendarIcon">▼</div>
+    </div>
+    <div class="toggle-content" id="addCalendarContent">
       <div class="input-group">
         <label>캘린더 유형</label>
         <select id="calendarType" onchange="updateCalendarInputs()">
@@ -1827,6 +1836,20 @@ function toggleViewCalendar(viewType, calendarId) {
   saveToStorage();
   renderCalendar();
   addDebugLog(`${viewType}뷰 캘린더 설정 변경: ${calendarId}`);
+}
+
+// 범용 토글 함수
+function toggleSection(sectionName) {
+  const content = document.getElementById(sectionName + 'Content');
+  const icon = document.getElementById(sectionName + 'Icon');
+  
+  content.classList.toggle('expanded');
+  icon.classList.toggle('expanded');
+}
+
+// 기존 뷰별 캘린더 설정 함수도 새 함수 사용하도록 변경
+function toggleViewCalendarSettings() {
+  toggleSection('viewCalendar');
 }
 
 // 전체 선택/해제
