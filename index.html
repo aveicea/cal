@@ -828,36 +828,23 @@
   }
 
   .settings-panel {
-    position: fixed;
-    right: 0;
-    top: 0;
+    /* position: fixed; 제거 */
+    /* right: 0; 제거 */
+    /* top: 0; 제거 */
     width: 300px;
-    height: 100vh; /* 화면 전체 높이 */
-    overflow-y: auto; /* 세로 스크롤만 */
-    overflow-x: hidden; /* 가로 스크롤 숨김 */
-    background: white;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-    z-index: 1000;
-    padding: 20px;
-    box-sizing: border-box;
+    min-width: 300px;
+    max-width: 300px;
+    /* height: 100vh; 제거하고 원래 높이로 */
+    overflow-y: auto; /* 세로 스크롤만 유지 */
+    overflow-x: hidden; /* 가로 스크롤 숨김 유지 */
+    /* 기존 스타일들 (background, box-shadow, padding 등) 유지 */
   }
   
-  .toggle-content {
-    display: none;
-    margin-top: 8px;
-    /* max-height 제거 */
-    /* overflow 제거 */
-  }
-  
-  .toggle-content.expanded {
-    display: block;
-  }
-  
-  /* 오버레이도 조정 */
   .overlay {
+    /* 오버레이도 원래대로 */
     position: fixed;
     left: 0;
-    right: 0px; /* 설정 패널 너비만큼 제외 */
+    right: 0; /* 원래대로 */
     top: 0;
     bottom: 0;
     background: rgba(0,0,0,0.5);
