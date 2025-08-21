@@ -717,6 +717,40 @@
     cursor: pointer;
   }
 
+  .backup-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+  .btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .btn-primary {
+    background-color: var(--accent-color);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-hover-color);
+  }
+
+  .btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+
+  .btn-secondary:hover {
+    background-color: #e8e8e8;
+  }
+
 </style>
 </head>
 <body>
@@ -828,6 +862,18 @@
       <button class="btn btn-primary" onclick="addCalendar()">캘린더 추가</button>
     </div>
 
+    <div class="backup-section">
+      <div class="color-picker-title">설정 백업/복원</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <button class="btn btn-primary" onclick="exportCalendarSettings()">설정 내려받기</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">설정 가져오기</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importCalendarSettings(this)">
+      <div style="font-size: 11px; color: #666; margin-top: 5px;">
+        캘린더 연동 정보, 색상, 뷰 설정 등을 백업하고 복원할 수 있습니다.
+      </div>
+    </div>
+    
     <div class="debug-section">
       <div class="color-picker-title">디버그 정보</div>
       <button class="btn btn-secondary" onclick="clearDebugLog()">로그 지우기</button>
@@ -2655,15 +2701,15 @@ async function addCalendar() {
 function saveToStorage() {
   try {
     const data = {
-        view: currentView,
-        currentDate: currentDate.toISOString(),
-        accentColor: accentColor,
-        accentHoverColor: accentHoverColor,
-        viewCalendarSettings: viewCalendarSettings,
-        calendars: calendars.map(cal => ({
-          ...cal,
-          events: cal.events || []
-      }))
+      view: currentView,
+      currentDate: currentDate.toISOString(),
+      accentColor: accentColor,
+      accentHoverColor: accentHoverColor,
+      viewCalendarSettings: viewCalendarSettings,
+      calendars: calendars.map(cal => ({
+        ...cal,
+        events: cal.events || []
+    }))
 };
     
     localStorage.setItem('multiCalendarData', JSON.stringify(data));
@@ -2671,6 +2717,137 @@ function saveToStorage() {
   } catch (e) {
     addDebugLog(`저장 실패: ${e.message}`);
   }
+}
+
+// 캘린더 설정 내보내기
+function exportCalendarSettings() {
+  try {
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      view: currentView,
+      currentDate: currentDate.toISOString(),
+      accentColor: accentColor,
+      accentHoverColor: accentHoverColor,
+      viewCalendarSettings: viewCalendarSettings,
+      calendars: calendars.map(cal => ({
+        id: cal.id,
+        name: cal.name,
+        type: cal.type,
+        color: cal.color,
+        visible: cal.visible,
+        url: cal.url,
+        calendarId: cal.calendarId,
+        apiKey: cal.apiKey,
+        status: cal.status,
+        statusMessage: cal.statusMessage
+        // events는 제외 (용량 절약 및 보안)
+      }))
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `캘린더설정_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    addDebugLog(`캘린더 설정 내보내기 완료: ${calendars.length}개 캘린더`);
+    alert('캘린더 설정이 다운로드되었습니다.');
+    
+  } catch (error) {
+    addDebugLog(`설정 내보내기 실패: ${error.message}`);
+    alert('설정 내보내기에 실패했습니다: ' + error.message);
+  }
+}
+
+// 캘린더 설정 가져오기
+async function importCalendarSettings(fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const importData = JSON.parse(text);
+    
+    // 버전 확인
+    if (!importData.version) {
+      throw new Error('유효하지 않은 설정 파일입니다.');
+    }
+    
+    addDebugLog(`설정 파일 가져오기 시작: ${importData.calendars?.length || 0}개 캘린더`);
+    
+    // 기존 캘린더 백업 (sample 제외)
+    const backupCalendars = calendars.filter(cal => cal.type === 'sample');
+    
+    // 설정 복원
+    currentView = importData.view || 'day';
+    if (importData.currentDate) {
+      currentDate = new Date(importData.currentDate);
+    }
+    if (importData.accentColor) {
+      setAccentColor(importData.accentColor);
+    }
+    if (importData.viewCalendarSettings) {
+      viewCalendarSettings = importData.viewCalendarSettings;
+    }
+    
+    // 캘린더 복원 및 이벤트 로드
+    calendars = [...backupCalendars]; // sample 캘린더는 유지
+    
+    if (importData.calendars && Array.isArray(importData.calendars)) {
+      for (const calData of importData.calendars) {
+        if (calData.type === 'sample') continue; // sample은 건너뛰기
+        
+        const calendar = {
+          id: calData.id || Date.now().toString() + Math.random(),
+          name: calData.name || '이름 없음',
+          type: calData.type,
+          color: calData.color || '#D1D1D1',
+          visible: calData.visible !== false,
+          url: calData.url,
+          calendarId: calData.calendarId,
+          apiKey: calData.apiKey,
+          events: [],
+          status: 'loading',
+          statusMessage: '불러오는 중...'
+        };
+        
+        calendars.push(calendar);
+        updateCalendarStatus(calendar.id, 'loading', '불러오는 중...');
+        
+        // 이벤트 로드
+        try {
+          await loadCalendarEvents(calendar);
+          updateCalendarStatus(calendar.id, 'success', `${calendar.events.length}개 이벤트`);
+          addDebugLog(`캘린더 복원 성공: ${calendar.name}`);
+        } catch (error) {
+          updateCalendarStatus(calendar.id, 'error', error.message);
+          addDebugLog(`캘린더 복원 실패: ${calendar.name} - ${error.message}`);
+        }
+      }
+    }
+    
+    // UI 업데이트
+    document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(currentView + 'Btn').classList.add('active');
+    
+    updateCurrentDateDisplay();
+    updateCalendarList();
+    renderCalendar();
+    saveToStorage();
+    
+    addDebugLog('캘린더 설정 가져오기 완료');
+    alert(`캘린더 설정을 성공적으로 가져왔습니다.\n복원된 캘린더: ${importData.calendars?.length || 0}개`);
+    
+  } catch (error) {
+    addDebugLog(`설정 가져오기 실패: ${error.message}`);
+    alert('설정 파일을 읽는데 실패했습니다: ' + error.message);
+  }
+  
+  // 파일 입력 초기화
+  fileInput.value = '';
 }
 
 function loadFromStorage() {
@@ -2684,6 +2861,7 @@ function loadFromStorage() {
       }
       accentColor = parsed.accentColor || '#D1D1D1';
       accentHoverColor = parsed.accentHoverColor || darkenColor(accentColor, 15);
+      viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
       viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
       calendars = parsed.calendars || [];
       
