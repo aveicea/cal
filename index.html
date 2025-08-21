@@ -707,6 +707,13 @@
     <div class="settings-title">멀티 캘린더 설정</div>
     <button class="nav-btn" onclick="refreshAllCalendars()" title="모든 캘린더 새로고침">🔄</button>
     
+    <div class="view-calendar-section">
+      <div class="color-picker-title">뷰별 캘린더 선택</div>
+      <div id="viewCalendarSettings">
+        <!-- 동적으로 생성됨 -->
+      </div>
+    </div>
+
     <div class="color-picker-group">
       <div class="color-picker-title">테마 색상</div>
       <div class="color-input-row">
@@ -813,6 +820,13 @@ let accentColor = '#D1D1D1';
 let accentHoverColor = '#3367d6';
 let calendars = [];
 let debugMessages = [];
+
+let viewCalendarSettings = {
+  day: [],    // 일간뷰에서 보일 캘린더 ID 배열
+  week: [],   // 주간뷰에서 보일 캘린더 ID 배열  
+  month: []   // 월간뷰에서 보일 캘린더 ID 배열
+};
+
 
 // 캘린더 색상 팔레트
 const calendarColors = [
@@ -2463,8 +2477,15 @@ function getEventMinute(timeString) {
 
 function getAllEventsForDate(date) {
   const allEvents = [];
+  const activeCalendarIds = viewCalendarSettings[currentView];
+
   calendars.forEach(calendar => {
     if (!calendar.visible || !calendar.events) return;
+
+    if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) {
+      return;
+    }
+
     const events = calendar.events.filter(event => {
       const eventDate = new Date(event.date + 'T00:00:00');
       return eventDate.toDateString() === date.toDateString();
