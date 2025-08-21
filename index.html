@@ -1397,6 +1397,7 @@ async function loadApiEvents(calendar) {
 // iCal 데이터 파싱 함수
 function parseIcalData(icalText) {
   const events = [];
+  const exceptionalEvents = new Map(); // 추가
   const lines = icalText.split(/\r?\n/);
   let currentEvent = null;
   
@@ -1431,26 +1432,22 @@ function parseIcalData(icalText) {
         };
         
         // 반복 일정인 경우 - 여기가 핵심!
-        if (currentEvent.rrule) {
-          addDebugLog(`반복 일정 발견: ${baseEvent.title}, RRULE: ${currentEvent.rrule}`);
-          
-          // 현재 뷰 범위 계산
-          const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
-          const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
-          
-          // 기존 함수들 활용
-          const expandedEvents = expandRecurringEventWithExceptions(
-            baseEvent, 
-            viewStart, 
-            viewEnd, 
-            new Map() // 예외 이벤트는 일단 빈 Map
-          );
-          
-          events.push(...expandedEvents);
-          addDebugLog(`반복 일정 확장 완료: ${expandedEvents.length}개 인스턴스`);
+        if (currentEvent.isException && currentEvent.recurrenceId) {
+            // 예외 이벤트는 Map에 저장
+            const originalId = currentEvent.uid.split('@')[0]; // UID에서 원본 ID 추출
+            const exceptionKey = `${originalId}_${currentEvent.recurrenceId.date}`;
+            exceptionalEvents.set(exceptionKey, baseEvent);
+        } else if (currentEvent.rrule) {
+            // 반복 일정 확장 시 예외 이벤트 전달
+            const expandedEvents = expandRecurringEventWithExceptions(
+              baseEvent, 
+              viewStart, 
+              viewEnd, 
+              exceptionalEvents
+            );
+            events.push(...expandedEvents);
         } else {
-          // 일반 단일 이벤트
-          events.push(baseEvent);
+            events.push(baseEvent);
         }
       }
       currentEvent = null;
@@ -1604,20 +1601,21 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
     while (current <= viewEnd && count < maxOccurrences) {
         if (current >= viewStart) {
             const currentDateString = current.toDateString();
-            const exceptionKey = `${event.id}_${currentDateString}`;
+            const exceptionKey = `${event.id}_${current.toISOString().split('T')[0]}`;
             
             
             // 제외된 날짜인지 확인
+            // 제외된 날짜인지 확인
             if (!excludedDates.has(currentDateString)) {
-                // 수정된 인스턴스가 있는지 확인
-                if (exceptionalEvents.has(exceptionKey)) {
-                    const exceptionalEvent = exceptionalEvents.get(exceptionKey);
-                    occurrences.push({
-                        ...exceptionalEvent,
-                        isException: true,
-                        originalEventId: event.id
-                    });
-                } else {
+              // 수정된 인스턴스가 있는지 확인
+              if (exceptionalEvents.has(exceptionKey)) {
+                const exceptionalEvent = exceptionalEvents.get(exceptionKey);
+                occurrences.push({
+                  ...exceptionalEvent,
+                  isException: true,
+                  originalEventId: event.id
+                });
+              } else {
                     // 원본 반복 인스턴스 사용
                     const occurrenceStart = new Date(current.getTime());
                     const occurrenceEnd = new Date(current.getTime() + eventDuration);
