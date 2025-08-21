@@ -1210,6 +1210,11 @@ async function loadIcalEvents(calendar) {
     // 백업 옵션들
     `https://thingproxy.freeboard.io/fetch/${calendar.url}`,
     `https://yacdn.org/proxy/${calendar.url}`
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(calendar.url)}`,
+    `https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(calendar.url)}`,
+    `https://corsproxy.org/?${encodeURIComponent(calendar.url)}`,
+    `https://cors.bridged.cc/${calendar.url}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(calendar.url)}`
   ];
   
   let lastError = null;
