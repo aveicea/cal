@@ -684,6 +684,39 @@
     }
   }
   
+  .view-calendar-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+  .view-calendar-section:last-child {
+    border-bottom: none;
+  }
+
+  .view-calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .view-calendar-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .view-calendar-item:hover {
+    background-color: #f0f0f0;
+  }
+
+  .view-calendar-item input[type="checkbox"] {
+    cursor: pointer;
+  }
+
 </style>
 </head>
 <body>
@@ -705,8 +738,7 @@
   
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-title">멀티 캘린더 설정</div>
-    <button class="nav-btn" onclick="refreshAllCalendars()" title="모든 캘린더 새로고침">🔄</button>
-    
+
     <div class="view-calendar-section">
       <div class="color-picker-title">뷰별 캘린더 선택</div>
       <div id="viewCalendarSettings">
@@ -732,10 +764,10 @@
     
     <div class="calendar-list-section">
       <div class="color-picker-title">연동된 캘린더 목록</div>
-      <button class="btn btn-secondary" onclick="addSampleCalendar()" style="margin-bottom: 10px;">샘플 캘린더 추가</button>
+      <button class="nav-btn" onclick="refreshAllCalendars()" title="모든 캘린더 새로고침">🔄</button>
       <div id="calendarList">
         <p style="color: #666; font-size: 12px; text-align: center; padding: 20px;">
-          연동된 캘린더가 없습니다.<br>샘플 캘린더를 추가하거나 아래에서 캘린더를 추가해보세요!
+          연동된 캘린더가 없습니다.<br>아래에서 캘린더를 추가해보세요!
         </p>
       </div>
     </div>
@@ -1004,77 +1036,6 @@ function updateCalendarInputs() {
   });
   
   document.getElementById(type + 'Inputs').classList.add('active');
-}
-
-  // 샘플 캘린더 추가
-  function addSampleCalendar() {
-    const sampleEvents = generateSampleEvents();
-    const sampleCalendar = {
-      id: 'sample-' + Date.now(),
-      name: '샘플 캘린더',
-      type: 'sample',
-      color: calendarColors[calendars.length % calendarColors.length],
-      visible: true,
-      events: sampleEvents,
-      status: 'success',
-      statusMessage: `${sampleEvents.length}개 이벤트`
-    };
-    
-    calendars.push(sampleCalendar);
-    updateCalendarList();
-    renderCalendar();
-    saveToStorage();
-    addDebugLog('샘플 캘린더가 추가되었습니다.');
-  }
-  
-  // 샘플 이벤트 생성
-  function generateSampleEvents() {
-    const events = [];
-    const today = new Date();
-    
-    // 오늘부터 30일간의 샘플 이벤트 생성
-    for (let i = -5; i < 25; i++) {
-      const eventDate = new Date(today);
-      eventDate.setDate(today.getDate() + i);
-      
-      // 랜덤하게 이벤트 추가
-      if (Math.random() > 0.7) {
-        events.push({
-          title: getSampleEventTitle(),
-          date: eventDate.toISOString().split('T')[0],
-          time: Math.random() > 0.3 ? getSampleEventTime() : '종일',
-          startTime: Math.random() > 0.3 ? getSampleEventTime() : '종일',
-          endTime: Math.random() > 0.3 ? getSampleEventTime() : '종일',
-          description: '샘플 이벤트입니다.'
-        });
-      }
-    }
-    
-    return events;
-  }
-
-function getSampleEventTitle() {
-  const titles = [
-    '팀 회의', '프로젝트 미팅', '점심 약속', '의사 진료', '운동',
-    '친구 만나기', '쇼핑', '영화 보기', '독서', '산책',
-    '발표 준비', '보고서 작성', '고객 미팅', '세미나 참석', '교육 수강'
-  ];
-  return titles[Math.floor(Math.random() * titles.length)];
-}
-
-function getSampleEventTime() {
-  const hour = Math.floor(Math.random() * 12) + 9; // 9시-20시
-  const minute = Math.random() > 0.5 ? '00' : '30';
-  return `${hour.toString().padStart(2, '0')}:${minute}`;
-}
-
-function getSampleEndTime(startTime) {
-  if (startTime === '종일') return '종일';
-  
-  const [hour, minute] = startTime.split(':').map(Number);
-  const duration = Math.floor(Math.random() * 3) + 1; // 1-3시간
-  const endHour = Math.min(hour + duration, 23);
-  return `${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 }
 
 // 캘린더 이벤트 로드
@@ -1734,6 +1695,78 @@ function updateCalendarList() {
       </div>
     </div>
   `).join('');
+  
+  // 뷰별 캘린더 설정도 업데이트
+  updateViewCalendarSettings();
+}
+
+// 뷰별 캘린더 설정 업데이트
+function updateViewCalendarSettings() {
+  const container = document.getElementById('viewCalendarSettings');
+  if (!container) return;
+  
+  if (calendars.length === 0) {
+    container.innerHTML = '<p style="color: #666; font-size: 12px; text-align: center; padding: 10px;">연동된 캘린더가 없습니다.</p>';
+    return;
+  }
+  
+  const views = [
+    { key: 'day', name: '일간뷰' },
+    { key: 'week', name: '주간뷰' },
+    { key: 'month', name: '월간뷰' }
+  ];
+  
+  container.innerHTML = views.map(view => `
+    <div class="view-calendar-section">
+      <div style="font-weight: bold; margin-bottom: 8px; color: #333;">${view.name}</div>
+      <div class="view-calendar-list">
+        ${calendars.map(calendar => `
+          <label class="view-calendar-item">
+            <input type="checkbox" 
+                   ${viewCalendarSettings[view.key].includes(calendar.id) ? 'checked' : ''}
+                   onchange="toggleViewCalendar('${view.key}', '${calendar.id}')"
+                   style="margin-right: 8px;">
+            <span class="calendar-color-dot" style="background-color: ${calendar.color}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+            <span>${calendar.name}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div style="margin-top: 8px;">
+        <button class="btn btn-secondary" onclick="selectAllViewCalendars('${view.key}')" style="font-size: 11px; padding: 4px 8px;">전체 선택</button>
+        <button class="btn btn-secondary" onclick="deselectAllViewCalendars('${view.key}')" style="font-size: 11px; padding: 4px 8px; margin-left: 4px;">전체 해제</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 뷰별 캘린더 토글
+function toggleViewCalendar(viewType, calendarId) {
+  const index = viewCalendarSettings[viewType].indexOf(calendarId);
+  if (index > -1) {
+    viewCalendarSettings[viewType].splice(index, 1);
+  } else {
+    viewCalendarSettings[viewType].push(calendarId);
+  }
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`${viewType}뷰 캘린더 설정 변경: ${calendarId}`);
+}
+
+// 전체 선택/해제
+function selectAllViewCalendars(viewType) {
+  viewCalendarSettings[viewType] = calendars.map(cal => cal.id);
+  updateViewCalendarSettings();
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`${viewType}뷰 모든 캘린더 선택`);
+}
+
+function deselectAllViewCalendars(viewType) {
+  viewCalendarSettings[viewType] = [];
+  updateViewCalendarSettings();
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`${viewType}뷰 모든 캘린더 해제`);
 }
 
 // 캘린더 새로고침
@@ -2622,16 +2655,16 @@ async function addCalendar() {
 function saveToStorage() {
   try {
     const data = {
-      view: currentView,
-      currentDate: currentDate.toISOString(),
-      accentColor: accentColor,
-      accentHoverColor: accentHoverColor,
-      calendars: calendars.map(cal => ({
-        ...cal,
-        // 이벤트도 함께 저장하여 새로고침 시 유지
-        events: cal.events || []
+        view: currentView,
+        currentDate: currentDate.toISOString(),
+        accentColor: accentColor,
+        accentHoverColor: accentHoverColor,
+        viewCalendarSettings: viewCalendarSettings,
+        calendars: calendars.map(cal => ({
+          ...cal,
+          events: cal.events || []
       }))
-    };
+};
     
     localStorage.setItem('multiCalendarData', JSON.stringify(data));
     addDebugLog('설정이 localStorage에 저장되었습니다.');
@@ -2651,6 +2684,7 @@ function loadFromStorage() {
       }
       accentColor = parsed.accentColor || '#D1D1D1';
       accentHoverColor = parsed.accentHoverColor || darkenColor(accentColor, 15);
+      viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
       calendars = parsed.calendars || [];
       
       // UI 복원
