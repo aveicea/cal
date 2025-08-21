@@ -5,685 +5,685 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>멀티 캘린더 뷰어</title>
 <style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #ffffff;
-  min-height: 100vh;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  max-width: 1000px;  /* 추가 - 전체 최대 가로 크기 */
-  margin: 0 auto;     /* 추가 - 가운데 정렬 */
-}
-
-.header {
-  padding: 10px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.view-selector {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex: 1;
-  justify-content: center;
-}
-
-.view-btn {
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #666;
-  width: 32px;  /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
-  height: 32px; /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0; /* 수정 - padding 제거해서 크기 맞춤 */
-}
-
-.view-btn-group .view-btn:last-child {
-  margin-right: 8px;
-}
-
-
-.view-btn.active {
-  background: var(--accent-color, #D1D1D1);
-  color: white;
-  border-color: var(--accent-color, #D1D1D1);
-}
-
-.nav-controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-right: 20px;
-}
-
-.nav-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  color: var(--accent-color, #D1D1D1);  /* 추가 - 테마색 적용 */
-}
-
-.nav-btn:hover {
-  background: #f8f9fa;
-  color: var(--accent-hover-color, #3367d6);
-}
-
-.current-date {
-  padding: 6px 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-  min-width: 80px;   /* 수정 - 120px에서 80px로 줄임 */
-  max-width: 80px;   /* 추가 - 최대 넓이 제한 */
-  text-align: center;
-  margin: 0 5px;     /* 추가 - 좌우 여백 */
-  height: 20px;      /* 추가 - 높이 제한 */
-  display: flex;     /* 추가 - flexbox로 중앙 정렬 */
-  align-items: center; /* 추가 - 수직 중앙 정렬 */
-  justify-content: center; /* 추가 - 수평 중앙 정렬 */
-}
-
-.settings-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  transition: all 0.2s ease;
-}
-
-.settings-btn:hover {
-  background: #e8eaed;
-  color: #333;
-}
-
-.settings-panel {
-  position: absolute;
-  top: 45px;
-  right: 20px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  width: 450px;
-  z-index: 1000;
-  display: none;
-  max-height: 70vh;
-  overflow-y: auto;
-  max-width: calc(100vw - 40px);  /* 추가 - 화면 크기에 맞춤 */
-  box-sizing: border-box;         /* 추가 */
-}
-
-.settings-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.color-picker-group {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.color-picker-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.color-input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.color-picker-input {
-  width: 40px;
-  height: 30px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 0;
-}
-
-.color-text-input {
-  flex: 1;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.preset-colors {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-}
-
-.preset-color {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.preset-color:hover {
-  transform: scale(1.1);
-  border-color: #333;
-}
-
-.calendar-list-section {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.calendar-item {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  background: #f8f9fa;
-}
-
-.calendar-item.active {
-  border-color: var(--accent-color, #D1D1D1);
-  background: #e3f2fd;
-}
-
-.calendar-color-picker {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  margin-right: 8px;
-  cursor: pointer;
-  padding: 0;
-  background: none;
-  box-shadow: 0 0 0 2px white, 0 0 0 3px #ddd;
-}
-
-.calendar-color-picker:hover {
-  transform: scale(1.1);
-  transition: transform 0.2s ease;
-}
-
-.calendar-info {
-  flex: 1;
-}
-
-.calendar-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-}
-
-.calendar-name:focus {
-  outline: 1px solid var(--accent-color, #D1D1D1);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
-
-.calendar-url {
-  font-size: 11px;
-  color: #666;
-  word-break: break-all;
-  margin-top: 2px;
-}
-
-.calendar-status {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-top: 2px;
-  display: inline-block;
-}
-
-.calendar-status.success {
-  background: #e8f5e8;
-  color: #2e7d32;
-}
-
-.calendar-status.error {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.calendar-status.loading {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.calendar-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.toggle-btn {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn.visible {
-  background: var(--accent-color, #D1D1D1);
-  color: white;
-}
-
-.toggle-btn.hidden {
-  background: #ccc;
-  color: white;
-}
-
-.remove-btn {
-  background: #f44336;
-  color: white;
-}
-
-.reload-btn {
-  background: #ff9800;
-  color: white;
-  font-size: 10px;
-}
-
-.add-calendar-section {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.input-group {
-  margin-bottom: 10px;
-}
-
-.input-group label {
-  display: block;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.input-group input, .input-group textarea, .input-group select {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-  box-sizing: border-box;
-  resize: vertical;
-}
-
-.help-text {
-  font-size: 11px;
-  color: #888;
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-.btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-right: 8px;
-  margin-bottom: 8px;
-}
-
-.btn-primary {
-  background: var(--accent-color, #D1D1D1);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover-color, #3367d6);
-}
-
-.btn-secondary {
-  background: #f8f9fa;
-  color: #666;
-  border: 1px solid #ddd;
-}
-
-.calendar- {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.calendar-content {
-  flex: 1;
-  overflow: auto;
-  background: #f8f9fa;
-  height: calc(100vh - 120px);  /* 이 줄 추가 */
-  min-height: 400px;  /* 이 줄 추가 */
-}
-  
-/* 월간 뷰 */
-.calendar-grid.month-view {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr);
-  gap: 1px;
-  background: #e0e0e0;
-  border: 1px solid #e0e0e0;
-  height: calc(100vh - 150px);
-  min-height: 250px;
-  max-height: 400px;
-  width: 100%;  /* 추가 */
-  table-layout: fixed;  /* 추가 - 고정 레이아웃 */
-}
-
-.calendar-day {
-  background: white;
-  min-height: 40px;
-  max-height: 120px;  /* 추가 - 최대 높이 제한 */
-  padding: 4px;
-  position: relative;
-  font-size: 11px;
-  border: none;
-  overflow: hidden;  /* 추가 - 넘치는 내용 숨김 */
-  width: 100%;  /* 추가 */
-  box-sizing: border-box;  /* 추가 */
-}
-
-.calendar-day.other-month {
-  background: #f8f9fa;
-  color: #999;
-}
-
-.calendar-day.today {
-  background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
-}
-
-.day-number {
-  font-weight: 500;
-  margin-bottom: 3px;
-}
-
-.event {
-  padding: 1px 3px;
-  border-radius: 2px;
-  font-size: 10px;
-  margin-bottom: 1px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #333;
-  cursor: pointer;
-  max-width: 100%;  /* 추가 */
-  display: block;  /* 추가 */
-}
-
-/* 시간 기반 뷰 개선 */
-.time-based-view {
-  display: grid;
-  background: white;
-  min-height: 600px;  /* 실제 필요한 높이로 설정 */
-  overflow: visible;  /* 부모가 스크롤 처리하도록 */
-}
-
-.week-view {
-  grid-template-columns: 50px repeat(7, 1fr);
-  grid-template-rows: 30px repeat(18, 25px);
-}
-
-.day-view {
-  grid-template-columns: 50px 1fr;
-  grid-template-rows: 30px repeat(18, 25px);
-}
-
-.time-slot {
-  background: #f8f9fa;
-  padding: 2px;
-  font-size: 8px;
-  color: #666;
-  border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #f0f0f0;
-  text-align: center;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.day-column {
-  background: white;
-  position: relative;
-  border-right: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
-  overflow: hidden;
-}
-
-.day-column:last-child {
-  border-right: none;
-}
-
-.week-header {
-  background: #f8f9fa;
-  padding: 8px;
-  font-weight: 500;
-  text-align: center;
-  font-size: 11px;
-  border-bottom: 1px solid #e0e0e0;
-  border-right: 1px solid #f0f0f0;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-.week-header:last-child {
-  border-right: none;
-}
-
-.week-header.today {
-  background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
-  color: var(--accent-color, #D1D1D1);  /* 다시 원래대로 */
-  font-weight: 600;
-}
-
-.week-header small {
-  font-size: 11px;
-  font-weight: normal;
-  margin-top: 2px;
-}
-
-/* 이벤트 스타일링 개선 */
-.time-event {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  border-radius: 4px;
-  padding: 2px 6px;
-  color: #333;
-  font-weight: 500;
-  font-size: 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;  /* nowrap → normal로 변경 */
-  word-wrap: break-word;
-  word-break: break-word;
-  line-height: 1.2;
-  overflow: visible;  /* hidden → visible로 변경 */
-  text-overflow: clip;  /* ellipsis → clip으로 변경 */
-}
-
-.time-event:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  z-index: 2;
-}
-
-.all-day-event {
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  right: 4px;
-  height: 20px;
-  line-height: 18px;
-  border-radius: 3px;
-  padding: 0 6px;
-  color: #333;
-  font-weight: 500;
-  font-size: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  z-index: 1;
-}
-
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #666;
-}
-
-.error-message {
-  background: #ffebee;
-  border: 1px solid #ffcdd2;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 20px;
-  color: #c62828;
-  font-size: 12px;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.1);
-  z-index: 999;
-  display: none;
-}
-
-.debug-section {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.debug-log {
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 10px;
-  font-family: monospace;
-  font-size: 11px;
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 10px;
-}
-
-.calendar-inputs {
-  display: none;
-}
-
-.calendar-inputs.active {
-  display: block;
-}
-
-@media (max-width: 768px) {
-  .settings-panel {
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: none;
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1000px;  /* 추가 - 전체 최대 가로 크기 */
+    margin: 0 auto;     /* 추가 - 가운데 정렬 */
   }
+  
+  .header {
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    flex-shrink: 0;
+  }
+  
+  .view-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .view-btn {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #666;
+    width: 32px;  /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
+    height: 32px; /* 수정 - view-btn 크기를 nav-btn과 동일하게 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* 수정 - padding 제거해서 크기 맞춤 */
+  }
+  
+  .view-btn-group .view-btn:last-child {
+    margin-right: 8px;
+  }
+  
+  
+  .view-btn.active {
+    background: var(--accent-color, #D1D1D1);
+    color: white;
+    border-color: var(--accent-color, #D1D1D1);
+  }
+  
   .nav-controls {
-    margin-right: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-right: 20px;
   }
-  .time-slot {
-    font-size: 9px;
-    padding: 2px;
+  
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #666;  
   }
-  .week-header {
+  
+  .nav-btn:hover {
+    background: #f8f9fa;
+    color: #333;
+  }
+  
+  .current-date {
+    padding: 6px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    min-width: 80px;   /* 수정 - 120px에서 80px로 줄임 */
+    max-width: 80px;   /* 추가 - 최대 넓이 제한 */
+    text-align: center;
+    margin: 0 5px;     /* 추가 - 좌우 여백 */
+    height: 20px;      /* 추가 - 높이 제한 */
+    display: flex;     /* 추가 - flexbox로 중앙 정렬 */
+    align-items: center; /* 추가 - 수직 중앙 정렬 */
+    justify-content: center; /* 추가 - 수평 중앙 정렬 */
+  }
+  
+  .settings-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s ease;
+  }
+  
+  .settings-btn:hover {
+    background: #e8eaed;
+    color: #333;
+  }
+  
+  .settings-panel {
+    position: absolute;
+    top: 45px;
+    right: 20px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 450px;
+    z-index: 1000;
+    display: none;
+    max-height: 70vh;
+    overflow-y: auto;
+    max-width: calc(100vw - 40px);  /* 추가 - 화면 크기에 맞춤 */
+    box-sizing: border-box;         /* 추가 */
+  }
+  
+  .settings-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: #333;
+  }
+  
+  .color-picker-group {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .color-picker-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .color-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .color-picker-input {
+    width: 40px;
+    height: 30px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  .color-text-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  
+  .preset-colors {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  
+  .preset-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .preset-color:hover {
+    transform: scale(1.1);
+    border-color: #333;
+  }
+  
+  .calendar-list-section {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .calendar-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+  }
+  
+  .calendar-item.active {
+    border-color: var(--accent-color, #D1D1D1);
+    background: #e3f2fd;
+  }
+  
+  .calendar-color-picker {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    margin-right: 8px;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    box-shadow: 0 0 0 2px white, 0 0 0 3px #ddd;
+  }
+  
+  .calendar-color-picker:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+  }
+  
+  .calendar-info {
+    flex: 1;
+  }
+  
+  .calendar-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+  
+  .calendar-name:focus {
+    outline: 1px solid var(--accent-color, #D1D1D1);
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+  
+  .calendar-url {
     font-size: 11px;
+    color: #666;
+    word-break: break-all;
+    margin-top: 2px;
+  }
+  
+  .calendar-status {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-top: 2px;
+    display: inline-block;
+  }
+  
+  .calendar-status.success {
+    background: #e8f5e8;
+    color: #2e7d32;
+  }
+  
+  .calendar-status.error {
+    background: #ffebee;
+    color: #c62828;
+  }
+  
+  .calendar-status.loading {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+  
+  .calendar-actions {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .toggle-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+  }
+  
+  .toggle-btn.visible {
+    background: var(--accent-color, #D1D1D1);
+    color: white;
+  }
+  
+  .toggle-btn.hidden {
+    background: #ccc;
+    color: white;
+  }
+  
+  .remove-btn {
+    background: #f44336;
+    color: white;
+  }
+  
+  .reload-btn {
+    background: #ff9800;
+    color: white;
+    font-size: 10px;
+  }
+  
+  .add-calendar-section {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .input-group {
+    margin-bottom: 10px;
+  }
+  
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  
+  .input-group input, .input-group textarea, .input-group select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  
+  .help-text {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  
+  .btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .btn-primary {
+    background: var(--accent-color, #D1D1D1);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--accent-hover-color, #3367d6);
+  }
+  
+  .btn-secondary {
+    background: #f8f9fa;
+    color: #666;
+    border: 1px solid #ddd;
+  }
+  
+  .calendar- {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .calendar-content {
+    flex: 1;
+    overflow: auto;
+    background: #f8f9fa;
+    height: calc(100vh - 120px);  /* 이 줄 추가 */
+    min-height: 400px;  /* 이 줄 추가 */
+  }
+    
+  /* 월간 뷰 */
+  .calendar-grid.month-view {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: auto repeat(6, 1fr);
+    gap: 1px;
+    background: #e0e0e0;
+    border: 1px solid #e0e0e0;
+    height: calc(100vh - 150px);
+    min-height: 250px;
+    max-height: 400px;
+    width: 100%;  /* 추가 */
+    table-layout: fixed;  /* 추가 - 고정 레이아웃 */
+  }
+  
+  .calendar-day {
+    background: white;
+    min-height: 40px;
+    max-height: 120px;  /* 추가 - 최대 높이 제한 */
     padding: 4px;
-  }
-}
-
-@media (max-height: 600px) {
-  .calendar-grid.month-view {
-    min-height: 200px;
-  }
-  
-  .week-view, .day-view {
-    grid-template-rows: 30px repeat(24, minmax(20px, 1fr));
-  }
-}
-
-@media (min-height: 800px) {
-  .calendar-grid.month-view {
-    min-height: 400px;
+    position: relative;
+    font-size: 11px;
+    border: none;
+    overflow: hidden;  /* 추가 - 넘치는 내용 숨김 */
+    width: 100%;  /* 추가 */
+    box-sizing: border-box;  /* 추가 */
   }
   
-  .week-view, .day-view {
-    grid-template-rows: 50px repeat(24, minmax(40px, 1fr));
+  .calendar-day.other-month {
+    background: #f8f9fa;
+    color: #999;
   }
-}
-
+  
+  .calendar-day.today {
+    background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
+  }
+  
+  .day-number {
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  
+  .event {
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-size: 10px;
+    margin-bottom: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #333;
+    cursor: pointer;
+    max-width: 100%;  /* 추가 */
+    display: block;  /* 추가 */
+  }
+  
+  /* 시간 기반 뷰 개선 */
+  .time-based-view {
+    display: grid;
+    background: white;
+    min-height: 600px;  /* 실제 필요한 높이로 설정 */
+    overflow: visible;  /* 부모가 스크롤 처리하도록 */
+  }
+  
+  .week-view {
+    grid-template-columns: 50px repeat(7, 1fr);
+    grid-template-rows: 30px repeat(18, 25px);
+  }
+  
+  .day-view {
+    grid-template-columns: 50px 1fr;
+    grid-template-rows: 30px repeat(18, 25px);
+  }
+  
+  .time-slot {
+    background: #f8f9fa;
+    padding: 2px;
+    font-size: 8px;
+    color: #666;
+    border-right: 1px solid #e0e0e0;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: center;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .day-column {
+    background: white;
+    position: relative;
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    overflow: hidden;
+  }
+  
+  .day-column:last-child {
+    border-right: none;
+  }
+  
+  .week-header {
+    background: #f8f9fa;
+    padding: 8px;
+    font-weight: 500;
+    text-align: center;
+    font-size: 11px;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #f0f0f0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  
+  .week-header:last-child {
+    border-right: none;
+  }
+  
+  .week-header.today {
+    background: var(--accent-color, #D1D1D1);  /* 기존: #e3f2fd */
+    color: var(--accent-color, #D1D1D1);  /* 다시 원래대로 */
+    font-weight: 600;
+  }
+  
+  .week-header small {
+    font-size: 11px;
+    font-weight: normal;
+    margin-top: 2px;
+  }
+  
+  /* 이벤트 스타일링 개선 */
+  .time-event {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #333;
+    font-weight: 500;
+    font-size: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;  /* nowrap → normal로 변경 */
+    word-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.2;
+    overflow: visible;  /* hidden → visible로 변경 */
+    text-overflow: clip;  /* ellipsis → clip으로 변경 */
+  }
+  
+  .time-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    z-index: 2;
+  }
+  
+  .all-day-event {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    right: 4px;
+    height: 20px;
+    line-height: 18px;
+    border-radius: 3px;
+    padding: 0 6px;
+    color: #333;
+    font-weight: 500;
+    font-size: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    z-index: 1;
+  }
+  
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #666;
+  }
+  
+  .error-message {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 20px;
+    color: #c62828;
+    font-size: 12px;
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    z-index: 999;
+    display: none;
+  }
+  
+  .debug-section {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .debug-log {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+  }
+  
+  .calendar-inputs {
+    display: none;
+  }
+  
+  .calendar-inputs.active {
+    display: block;
+  }
+  
+  @media (max-width: 768px) {
+    .settings-panel {
+      right: 10px;
+      left: 10px;
+      width: auto;
+      max-width: none;
+    }
+    .nav-controls {
+      margin-right: 10px;
+    }
+    .time-slot {
+      font-size: 9px;
+      padding: 2px;
+    }
+    .week-header {
+      font-size: 11px;
+      padding: 4px;
+    }
+  }
+  
+  @media (max-height: 600px) {
+    .calendar-grid.month-view {
+      min-height: 200px;
+    }
+    
+    .week-view, .day-view {
+      grid-template-rows: 30px repeat(24, minmax(20px, 1fr));
+    }
+  }
+  
+  @media (min-height: 800px) {
+    .calendar-grid.month-view {
+      min-height: 400px;
+    }
+    
+    .week-view, .day-view {
+      grid-template-rows: 50px repeat(24, minmax(40px, 1fr));
+    }
+  }
+  
 </style>
 </head>
 <body>
@@ -705,6 +705,7 @@ body {
   
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-title">멀티 캘린더 설정</div>
+    <button class="nav-btn" onclick="refreshAllCalendars()" title="모든 캘린더 새로고침">🔄</button>
     
     <div class="color-picker-group">
       <div class="color-picker-title">테마 색상</div>
@@ -1638,9 +1639,8 @@ function parseIcalDate(dateString) {
       
       // UTC 시간인 경우 (Z로 끝남) 로컬 시간으로 변환
       if (dateString.endsWith('Z')) {
-        // UTC to Local 변환
-        const utcTime = Date.UTC(year, month - 1, day, hour, minute);
-        date = new Date(utcTime);
+  // UTC 시간이지만 하루종일 일정의 경우 날짜만 중요하므로 로컬 날짜 유지
+        date = new Date(year, month - 1, day, hour, minute);
       }
       
       return {
@@ -2496,7 +2496,27 @@ function getAllEventsForDate(date) {
 }
 
 
-
+async function refreshAllCalendars() {
+  addDebugLog('모든 캘린더 새로고침 시작');
+  
+  for (const calendar of calendars) {
+    if (calendar.type !== 'sample') {
+      updateCalendarStatus(calendar.id, 'loading', '새로고침 중...');
+      try {
+        calendar.events = [];
+        await loadCalendarEvents(calendar);
+        updateCalendarStatus(calendar.id, 'success', `${calendar.events.length}개 이벤트`);
+      } catch (error) {
+        updateCalendarStatus(calendar.id, 'error', error.message);
+        addDebugLog(`캘린더 새로고침 실패: ${calendar.name} - ${error.message}`);
+      }
+    }
+  }
+  
+  renderCalendar();
+  saveToStorage();
+  addDebugLog('모든 캘린더 새로고침 완료');
+}
 
 
 // 캘린더 추가
