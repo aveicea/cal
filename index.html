@@ -827,6 +827,35 @@
     background: rgba(0,0,0,0.1);
   }
 
+  .settings-panel {
+  width: 300px;
+  min-width: 300px; /* 최소 너비 고정 */
+  max-width: 300px; /* 최대 너비 고정 */
+  box-sizing: border-box; /* 패딩 포함해서 계산 */
+  /* 기존 스타일들... */
+}
+
+  /* 내부 요소들도 너비 고정 */
+  .toggle-content {
+    display: none;
+    margin-top: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .input-group input,
+  .input-group select,
+  .input-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* 긴 텍스트가 튀어나가지 않도록 */
+  .help-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
 </style>
 </head>
 <body>
