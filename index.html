@@ -1366,14 +1366,11 @@ async function loadApiEvents(calendar) {
       const startDate = event.start.dateTime || event.start.date;
       const endDate = event.end.dateTime || event.end.date;
       const startTime = new Date(startDate);
-      const localYear = startTime.getFullYear();
-      const localMonth = (startTime.getMonth() + 1).toString().padStart(2, '0');
-      const localDay = startTime.getDate().toString().padStart(2, '0');
       const endTime = new Date(endDate);
       
       return {
         title: event.summary || '제목 없음',
-        date: `${localYear}-${localMonth}-${localDay}`,
+        date: startTime.toISOString().split('T')[0],
         startTime: event.start.dateTime ? 
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
@@ -1760,42 +1757,20 @@ function parseIcalDate(dateString) {
       const hour = parseInt(dateString.substring(9, 11));
       const minute = parseInt(dateString.substring(11, 13));
       
-      let date;
-
-      // YYYYMMDDTHHMMSS[Z] 형식 (시간 포함)
-      if (/^\d{8}T\d{6}Z?$/.test(dateString)) {
-        const year = parseInt(dateString.substring(0, 4));
-        const month = parseInt(dateString.substring(4, 6));
-        const day = parseInt(dateString.substring(6, 8));
-        const hour = parseInt(dateString.substring(9, 11));
-        const minute = parseInt(dateString.substring(11, 13));
-        
-        let date;
-        if (dateString.endsWith('Z')) {
-          // UTC 시간을 로컬 시간으로 변환
-          date = new Date(Date.UTC(year, month - 1, day, hour, minute));
-          // 로컬 날짜 계산 (UTC 변환 없이)
-          const localYear = date.getFullYear();
-          const localMonth = (date.getMonth() + 1).toString().padStart(2, '0');
-          const localDay = date.getDate().toString().padStart(2, '0');
-          
-          return {
-            date: `${localYear}-${localMonth}-${localDay}`,
-            time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-          };
-        } else {
-          date = new Date(year, month - 1, day, hour, minute);
-          const localYear = date.getFullYear();
-          const localMonth = (date.getMonth() + 1).toString().padStart(2, '0');
-          const localDay = date.getDate().toString().padStart(2, '0');
-          
-          return {
-            date: `${localYear}-${localMonth}-${localDay}`,
-            time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-          };
-        } 
+      let date = new Date(year, month - 1, day, hour, minute);
+      
+      // UTC 시간인 경우 (Z로 끝남) 로컬 시간으로 변환
+      if (dateString.endsWith('Z')) {
+        date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+      } else {
+        date = new Date(year, month - 1, day, hour, minute);
       }
-    }     
+      
+      return {
+        date: date.toISOString().split('T')[0],
+        time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      };
+    }
   } catch (e) {
     addDebugLog(`날짜 파싱 오류: ${dateString} - ${e.message}`);
   }
@@ -2704,10 +2679,8 @@ function getAllEventsForDate(date) {
     }
 
     const events = calendar.events.filter(event => {
-      // 연, 월, 일 직접 비교
-      const eventDate = new Date(event.date);
-      const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      return eventDate.toDateString() === targetDate.toDateString();
+      // 문자열 비교로 변경하여 시간대 문제 방지
+      return event.date === date.toISOString().split('T')[0];
     });
     events.forEach(event => {
       allEvents.push({
