@@ -1761,17 +1761,15 @@ function parseIcalDate(dateString) {
       
       // UTC 시간인 경우 (Z로 끝남) 로컬 시간으로 변환
       if (dateString.endsWith('Z')) {
-      // UTC 시간을 제대로 파싱한 후 자동으로 로컬 시간으로 변환
-      date = new Date(year + '-' + month.toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0') + 'T' + 
-                      hour.toString().padStart(2, '0') + ':' + minute.toString().padStart(2, '0') + ':00Z');
-       } else {
-        date = new Date(year, month - 1, day, hour, minute);
+        date = new Date(Date.UTC(year, month - 1, day, hour, minute));
       }
+      
       return {
-        date: date.toISOString().split('T')[0],
+        // toISOString() 대신 로컬 날짜 직접 계산
+        date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
         time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
       };
-    }
+    }     
   } catch (e) {
     addDebugLog(`날짜 파싱 오류: ${dateString} - ${e.message}`);
   }
