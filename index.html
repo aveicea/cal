@@ -1366,14 +1366,11 @@ async function loadApiEvents(calendar) {
       const startDate = event.start.dateTime || event.start.date;
       const endDate = event.end.dateTime || event.end.date;
       const startTime = new Date(startDate);
-      const localYear = startTime.getFullYear();
-      const localMonth = (startTime.getMonth() + 1).toString().padStart(2, '0');
-      const localDay = startTime.getDate().toString().padStart(2, '0');
       const endTime = new Date(endDate);
       
       return {
         title: event.summary || '제목 없음',
-        date: `${localYear}-${localMonth}-${localDay}`,
+        date: startTime.toISOString().split('T')[0],
         startTime: event.start.dateTime ? 
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
@@ -1760,42 +1757,20 @@ function parseIcalDate(dateString) {
       const hour = parseInt(dateString.substring(9, 11));
       const minute = parseInt(dateString.substring(11, 13));
       
-      let date;
-
-      // YYYYMMDDTHHMMSS[Z] 형식 (시간 포함)
-      if (/^\d{8}T\d{6}Z?$/.test(dateString)) {
-        const year = parseInt(dateString.substring(0, 4));
-        const month = parseInt(dateString.substring(4, 6));
-        const day = parseInt(dateString.substring(6, 8));
-        const hour = parseInt(dateString.substring(9, 11));
-        const minute = parseInt(dateString.substring(11, 13));
-        
-        let date;
-        if (dateString.endsWith('Z')) {
-          // UTC 시간을 로컬 시간으로 변환
-          date = new Date(Date.UTC(year, month - 1, day, hour, minute));
-          // 로컬 날짜 계산 (UTC 변환 없이)
-          const localYear = date.getFullYear();
-          const localMonth = (date.getMonth() + 1).toString().padStart(2, '0');
-          const localDay = date.getDate().toString().padStart(2, '0');
-          
-          return {
-            date: `${localYear}-${localMonth}-${localDay}`,
-            time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-          };
-        } else {
-          date = new Date(year, month - 1, day, hour, minute);
-          const localYear = date.getFullYear();
-          const localMonth = (date.getMonth() + 1).toString().padStart(2, '0');
-          const localDay = date.getDate().toString().padStart(2, '0');
-          
-          return {
-            date: `${localYear}-${localMonth}-${localDay}`,
-            time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-          };
-        } 
+      let date = new Date(year, month - 1, day, hour, minute);
+      
+      // UTC 시간인 경우 (Z로 끝남) 로컬 시간으로 변환
+      if (dateString.endsWith('Z')) {
+        date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+      } else {
+        date = new Date(year, month - 1, day, hour, minute);
       }
-    }     
+      
+      return {
+        date: date.toISOString().split('T')[0],
+        time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      };
+    }
   } catch (e) {
     addDebugLog(`날짜 파싱 오류: ${dateString} - ${e.message}`);
   }
@@ -2161,37 +2136,42 @@ function splitCrossDayEvent(event) {
   
   const startHour = getEventHour(event.startTime);
   const endHour = getEventHour(event.endTime);
+  const startMinute = getEventMinute(event.startTime);
+  const endMinute = getEventMinute(event.endTime);
   
-  // 0~5시 이벤트는 이미 다음날 표시로 처리되므로 분할 불필요
-  if (startHour >= 0 && startHour < 6) {
+  const startPosition = getExactSlotPosition(startHour, startMinute);
+  const endPosition = getExactSlotPosition(endHour, endMinute);
+  
+  // 이틀에 걸치지 않는 경우
+  if (startPosition < endPosition) {
     return [event];
   }
   
-  // 6시 이후 시작해서 다음날 0~5시에 끝나는 경우만 분할
-  if (startHour >= 6 && endHour >= 0 && endHour < 6) {
-    const events = [];
-    
-    // 첫째 날 부분 (시작시간 ~ 23:59)
+  // 이틀에 걸치는 경우 - 분할
+  const events = [];
+  
+  // 첫째 날 부분 (시작시간 ~ 5:59:59)
+  if (startHour >= SLOT_START_HOUR) {
     events.push({
       ...event,
-      endTime: '23:59',
+      endTime: '05:59',
       title: event.title,
       isFirstPart: true
     });
-    
-    // 둘째 날 부분 (00:00 ~ 종료시간) - 하지만 이건 실제로는 첫째날 표시 영역
+  }
+  
+  // 둘째 날 부분 (6:00 ~ 종료시간)
+  if (endHour < SLOT_START_HOUR) {
     events.push({
       ...event,
-      startTime: '00:00',
+      startTime: '06:00',
       title: event.title,
       isSecondPart: true,
       isNextDay: true
     });
-    
-    return events;
   }
   
-  return [event];
+  return events;
 }
 
 // 주간 뷰 렌더링 (24시간 버전)
@@ -2410,7 +2390,81 @@ function renderWeekView() {
     }
     
     // 다음날 새벽 이벤트 처리 (동일한 방식)
-  }}
+    const nextDate = new Date(date);
+    nextDate.setDate(date.getDate() + 1);
+    const nextDayEvents = getAllEventsForDate(nextDate);
+    
+    nextDayEvents.forEach((event) => {
+      const splitEvents = splitCrossDayEvent(event);
+      
+      splitEvents.forEach((splitEvent) => {
+        if (!splitEvent.isSecondPart) return;
+        
+        if (splitEvent.time !== '종일') {
+          const startHour = getEventHour(splitEvent.startTime);
+          const endHour = getEventHour(splitEvent.endTime);
+          
+          if (startHour < SLOT_START_HOUR || endHour < SLOT_START_HOUR) {
+            const startMinute = getEventMinute(splitEvent.startTime);
+            const endMinute = getEventMinute(splitEvent.endTime);
+
+            const startPosition = getExactSlotPosition(startHour, startMinute);
+            const endPosition = getExactSlotPosition(endHour, endMinute);
+            const startSlot = Math.floor(startPosition);
+            
+            const currentEventIndex = eventCounts[startSlot] || 0;
+            eventCounts[startSlot] = (eventCounts[startSlot] || 0) + 1;
+
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'time-event';
+            eventDiv.style.backgroundColor = event.color;
+            eventDiv.style.color = '#333';
+            eventDiv.style.padding = '2px 6px';
+            eventDiv.style.fontSize = '0.6em';
+            eventDiv.style.overflow = 'visible';
+            eventDiv.style.textOverflow = 'clip';
+            eventDiv.style.whiteSpace = 'normal';
+            eventDiv.style.position = 'absolute';
+            eventDiv.style.boxSizing = 'border-box';
+            eventDiv.style.zIndex = 100 + currentEventIndex;
+                    //추가
+            eventDiv.style.wordWrap = 'break-word';
+            eventDiv.style.wordBreak = 'break-word';
+            eventDiv.style.lineHeight = '1.2';
+            eventDiv.style.minHeight = '20px';     // 최소 높이 보장
+            
+            const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외
+            const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
+            const topOffset = (startPosition - startSlot) * cellHeight;
+            const height = (endPosition - startPosition) * cellHeight;
+            
+            eventDiv.style.top = `${topOffset}px`;
+            eventDiv.style.height = `${Math.max(height, 20)}px`;
+            
+            const totalEvents = Math.max(eventCounts[startSlot], 1);
+            const eventWidth = Math.floor(100 / totalEvents);
+            const leftPosition = currentEventIndex * eventWidth;
+            
+            eventDiv.style.left = `${leftPosition}%`;
+            eventDiv.style.width = `${eventWidth}%`;
+            
+            eventDiv.textContent = splitEvent.title;
+            eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+            if (dayCells[day][startSlot]) {
+              dayCells[day][startSlot].appendChild(eventDiv);
+              if (!slotEventDivs[startSlot]) slotEventDivs[startSlot] = [];
+              slotEventDivs[startSlot].push(eventDiv);
+            }
+          }
+        }
+      });
+    });
+  }
+
+  container.appendChild(grid);
+  calendarContent.innerHTML = '';
+  calendarContent.appendChild(container);
+}
 
 // 일간 뷰
 function renderDayView() {
@@ -2625,29 +2679,9 @@ function getAllEventsForDate(date) {
     }
 
     const events = calendar.events.filter(event => {
-      const eventDate = new Date(event.date);
-      const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      
-      // 이벤트가 시간 정보가 있는 경우
-      if (event.startTime && event.startTime !== '종일') {
-        const startHour = getEventHour(event.startTime);
-        
-        // 0~5시 이벤트는 다음날에 표시 (즉, 하루 전날에 속함)
-        if (startHour >= 0 && startHour < 6) {
-          // 이벤트 날짜의 다음날과 타겟 날짜가 같으면 표시
-          const nextEventDate = new Date(eventDate);
-          nextEventDate.setDate(eventDate.getDate() + 1);
-          return nextEventDate.toDateString() === targetDate.toDateString();
-        } else {
-          // 6시 이후 이벤트는 원래 날짜에 표시
-          return eventDate.toDateString() === targetDate.toDateString();
-        }
-      } else {
-        // 종일 이벤트는 원래 날짜에 표시
-        return eventDate.toDateString() === targetDate.toDateString();
-      }
+      // 문자열 비교로 변경하여 시간대 문제 방지
+      return event.date === date.toISOString().split('T')[0];
     });
-    
     events.forEach(event => {
       allEvents.push({
         ...event,
@@ -2658,7 +2692,6 @@ function getAllEventsForDate(date) {
   });
   
   return allEvents;
-}
 
     // 함수 마지막에 추가
   const uniqueEvents = [];
@@ -2673,6 +2706,7 @@ function getAllEventsForDate(date) {
   });
 
   return uniqueEvents;
+}
 
 
 async function refreshAllCalendars() {
