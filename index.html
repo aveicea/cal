@@ -2680,8 +2680,10 @@ function getAllEventsForDate(date) {
     }
 
     const events = calendar.events.filter(event => {
-      // 문자열 비교로 변경하여 시간대 문제 방지
-      return event.date === date.toISOString().split('T')[0];
+      // 연, 월, 일 직접 비교
+      const eventDate = new Date(event.date);
+      const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return eventDate.toDateString() === targetDate.toDateString();
     });
     events.forEach(event => {
       allEvents.push({
