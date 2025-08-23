@@ -2275,10 +2275,11 @@ function renderWeekView() {
       }));
     });
     
-    const allDayEvents = [...dayEvents, ...nextDayEarlyEvents];
+
     const eventCounts = Array(SLOT_COUNT).fill(0); // 각 슬롯별 이벤트 개수
     const slotEventDivs = Array(SLOT_COUNT).fill().map(() => []); // 각 슬롯별 이벤트 div 저장
-    
+    const allDayEvents = [...dayEvents, ...nextDayEarlyEvents];
+
     dayEvents.forEach((event) => {
       const splitEvents = splitCrossDayEvent(event);
       
