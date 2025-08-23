@@ -2592,6 +2592,8 @@ function getAllEventsForDate(date) {
       });
     });
   });
+  
+  return allEvents;
 
     // 함수 마지막에 추가
   const uniqueEvents = [];
@@ -2607,8 +2609,6 @@ function getAllEventsForDate(date) {
 
   return uniqueEvents;
 }
-  
-return allEvents;
 
 
 async function refreshAllCalendars() {
