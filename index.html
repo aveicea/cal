@@ -1201,8 +1201,6 @@ async function loadCalendarEvents(calendar) {
 async function loadIcalEvents(calendar) {
   // 더 안정적인 프록시 서비스들로 업데이트
   const proxies = [
-    `https://api.allorigins.win/get?url=${encodeURIComponent(calendar.url)}`,
-    `https://cors-anywhere.herokuapp.com/${calendar.url}`,
     `https://corsproxy.io/?${encodeURIComponent(calendar.url)}`,
     // 새로운 프록시 추가
     `https://proxy.cors.sh/${calendar.url}`,
@@ -1397,8 +1395,6 @@ async function loadApiEvents(calendar) {
 // iCal 데이터 파싱 함수
 function parseIcalData(icalText) {
   const events = [];
-  const recurringEvents = new Map(); // 반복 일정 저장
-  const exceptionEvents = new Map(); // 예외 일정 저장
   const lines = icalText.split(/\r?\n/);
   let currentEvent = null;
   
@@ -1416,7 +1412,7 @@ function parseIcalData(icalText) {
     if (line === 'BEGIN:VEVENT') {
       currentEvent = {};
     } 
-    if (line === 'END:VEVENT' && currentEvent) {
+    else if (line === 'END:VEVENT' && currentEvent) {
       if (currentEvent.summary && currentEvent.dtstart) {
         const baseEvent = {
           id: currentEvent.uid || `event_${Date.now()}_${Math.random()}`,
@@ -1432,43 +1428,88 @@ function parseIcalData(icalText) {
           rrule: currentEvent.rrule
         };
         
-        // RECURRENCE-ID가 있으면 예외 이벤트
-        if (currentEvent.recurrenceId) {
-          const parentId = currentEvent.uid;
-          const exceptionDate = currentEvent.recurrenceId.date;
-          const key = `${parentId}_${exceptionDate}`;
-          exceptionEvents.set(key, baseEvent);
-        }
-        // RRULE이 있으면 반복 일정
-        else if (currentEvent.rrule) {
-          recurringEvents.set(currentEvent.uid, {
-            ...baseEvent,
-            exdates: currentEvent.exdate || []
-          });
-        }
-        // 일반 일정
-        else {
+        // 반복 일정인 경우 - 여기가 핵심!
+        if (currentEvent.rrule) {
+          addDebugLog(`반복 일정 발견: ${baseEvent.title}, RRULE: ${currentEvent.rrule}`);
+          
+          // 현재 뷰 범위 계산
+          const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
+          const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
+          
+          // 기존 함수들 활용
+          const expandedEvents = expandRecurringEventWithExceptions(
+            baseEvent, 
+            viewStart, 
+            viewEnd, 
+            new Map() // 예외 이벤트는 일단 빈 Map
+          );
+          
+          events.push(...expandedEvents);
+          addDebugLog(`반복 일정 확장 완료: ${expandedEvents.length}개 인스턴스`);
+        } else {
+          // 일반 단일 이벤트
           events.push(baseEvent);
         }
       }
       currentEvent = null;
     }
+    else if (currentEvent) {
+      const colonIndex = line.indexOf(':');
+      if (colonIndex > 0) {
+        const key = line.substring(0, colonIndex).split(';')[0];
+        const value = line.substring(colonIndex + 1);
+        
+        switch (key) {
+          case 'UID':
+            currentEvent.uid = value;
+            break;
+          case 'SUMMARY':
+            currentEvent.summary = decodeIcalText(value);
+            break;
+          case 'DESCRIPTION':
+            currentEvent.description = decodeIcalText(value);
+            break;
+          case 'DTSTART':
+            const startDate = parseIcalDate(value);
+            if (startDate) {
+              currentEvent.dtstart = startDate.date;
+              currentEvent.date = startDate.date;
+              currentEvent.time = startDate.time;
+              currentEvent.startTime = startDate.time;
+            }
+            break;
+          case 'DTEND':
+            const endDate = parseIcalDate(value);
+            if (endDate) {
+              currentEvent.endTime = endDate.time;
+            }
+            break;
+          case 'RRULE':
+            currentEvent.rrule = value;
+            addDebugLog(`RRULE 파싱됨: ${value}`);
+            break;
+
+            // parseIcalData 함수에서 EXDATE 처리 추가
+          case 'EXDATE':
+            if (!currentEvent.exdate) currentEvent.exdate = [];
+            currentEvent.exdate.push(parseIcalDate(value));
+            break;
+
+            // parseIcalData에서 RECURRENCE-ID 처리 추가
+          case 'RECURRENCE-ID':
+              currentEvent.recurrenceId = parseIcalDate(value);
+              currentEvent.isException = true;
+              break;
+
+          case 'LOCATION':
+              currentEvent.location = decodeIcalText(value);
+              break;
+        }
+      }
+    }
   }
   
-  // 두 번째 패스: 반복 일정 확장
-  const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
-  const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
-  
-  recurringEvents.forEach((event, uid) => {
-    const expandedEvents = expandRecurringEventWithExceptions(
-      event, 
-      viewStart, 
-      viewEnd, 
-      exceptionEvents // 예외 이벤트 맵 전달
-    );
-    events.push(...expandedEvents);
-  });
-  
+  addDebugLog(`iCal 파싱 완료: ${events.length}개 이벤트 추출`);
   return events;
 }
 
@@ -1499,12 +1540,12 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
 
     // EXDATE 처리
     const excludedDates = new Set();
-    if (event.exdates && event.exdates.length > 0) {
-      event.exdates.forEach(exdate => {
-        if (exdate && exdate.date) {
-          excludedDates.add(exdate.date); // 날짜 문자열로 저장
-        }
-      });
+    if (event.exdate) {
+        const exdates = Array.isArray(event.exdate) ? event.exdate : [event.exdate];
+        exdates.forEach(exdate => {
+            const excludeDate = new Date(exdate);
+            excludedDates.add(excludeDate.toDateString());
+        });
     }
     
     let current = new Date(eventStart.getTime());
@@ -1559,17 +1600,22 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
     // 실제 반복 일정 생성
     count = 0;
     while (current <= viewEnd && count < maxOccurrences) {
-    if (current >= viewStart) {
-      const currentDateStr = current.toISOString().split('T')[0];
-      const exceptionKey = `${event.uid}_${currentDateStr}`;
+        if (current >= viewStart) {
+            const currentDateString = current.toDateString();
+            const exceptionKey = `${event.id}_${currentDateString}`;
             
             
             // 제외된 날짜인지 확인
-            if (!excludedDates.has(currentDateStr)) {
-                  // 예외 이벤트 체크
-                  if (exceptionalEvents && exceptionalEvents.has(exceptionKey)) {
-                    occurrences.push(exceptionalEvents.get(exceptionKey));
-                  } else {
+            if (!excludedDates.has(currentDateString)) {
+                // 수정된 인스턴스가 있는지 확인
+                if (exceptionalEvents.has(exceptionKey)) {
+                    const exceptionalEvent = exceptionalEvents.get(exceptionKey);
+                    occurrences.push({
+                        ...exceptionalEvent,
+                        isException: true,
+                        originalEventId: event.id
+                    });
+                } else {
                     // 원본 반복 인스턴스 사용
                     const occurrenceStart = new Date(current.getTime());
                     const occurrenceEnd = new Date(current.getTime() + eventDuration);
@@ -1583,7 +1629,7 @@ function expandRecurringEventWithExceptions(event, viewStart, viewEnd, exception
                     occurrences.push({
                         ...event,
                         id: `${event.id}_${current.getTime()}`,
-                        date: currentDateStr,
+                        date: eventDate,
                         start: occurrenceStart.toISOString(),
                         end: occurrenceEnd.toISOString(),
                         startTime: startTimeStr,
