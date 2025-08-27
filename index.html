@@ -1051,7 +1051,29 @@ function clearDebugLog() {
 // 초기화
 function init() {
   loadFromStorage();
-  currentDate = new Date();
+  
+  // currentDate가 없으면 오늘로 설정 (6시 기준 고려)
+  if (!currentDate || isNaN(currentDate.getTime())) {
+    currentDate = new Date();
+    const hour = currentDate.getHours();
+    
+    // 0-6시면 전날을 "오늘"로 설정
+    if (hour < 6) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+  }
+  
+  // 노션 임베드 환경 처리
+  const isNotion = window.location !== window.parent.location;
+  if (isNotion) {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    currentDate = new Date();
+    if (hour < 6) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+  }
   updateCurrentDateDisplay();
   setAccentColor(accentColor);
   updateCalendarList();
