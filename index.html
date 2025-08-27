@@ -1051,9 +1051,7 @@ function clearDebugLog() {
 // 초기화
 function init() {
   loadFromStorage();
-  if (!currentDate || isNaN(currentDate.getTime())) {
-    currentDate = new Date();
-  }
+  currentDate = new Date();
   updateCurrentDateDisplay();
   setAccentColor(accentColor);
   updateCalendarList();
