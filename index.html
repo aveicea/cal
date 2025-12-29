@@ -1028,14 +1028,21 @@ const calendarContent = document.getElementById("calendarContent");
 const calendarList = document.getElementById("calendarList");
 const debugLog = document.getElementById("debugLog");
 
+// HTML 이스케이프 함수 (XSS 방지)
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // 디버그 로그 함수
 function addDebugLog(message) {
   const timestamp = new Date().toLocaleTimeString();
   debugMessages.push(`[${timestamp}] ${message}`);
   if (debugMessages.length > 50) debugMessages.shift();
-  
+
   if (debugLog) {
-    debugLog.innerHTML = debugMessages.map(msg => `<div>${msg}</div>`).join('');
+    debugLog.innerHTML = debugMessages.map(msg => `<div>${escapeHtml(msg)}</div>`).join('');
     debugLog.scrollTop = debugLog.scrollHeight;
   }
   console.log(message);
@@ -1853,27 +1860,27 @@ function updateCalendarList() {
   }
   
   calendarList.innerHTML = calendars.map(calendar => `
-    <div class="calendar-item ${calendar.visible ? 'active' : ''}" data-id="${calendar.id}">
-      <input type="color" value="${calendar.color}" 
-             onchange="updateCalendarColor('${calendar.id}', this.value)" 
-             class="calendar-color-picker" 
+    <div class="calendar-item ${calendar.visible ? 'active' : ''}" data-id="${escapeHtml(calendar.id)}">
+      <input type="color" value="${escapeHtml(calendar.color)}"
+             onchange="updateCalendarColor('${escapeHtml(calendar.id)}', this.value)"
+             class="calendar-color-picker"
              title="캘린더 색상 변경">
       <div class="calendar-info">
-        <input class="calendar-name" value="${calendar.name}" 
-               onchange="updateCalendarName('${calendar.id}', this.value)"
-               onblur="updateCalendarName('${calendar.id}', this.value)">
-        <div class="calendar-url">${calendar.type === 'sample' ? '샘플 데이터' : 
-          (calendar.url || calendar.calendarId || '').substring(0, 30)}${(calendar.url || calendar.calendarId || '').length > 30 ? '...' : ''}</div>
-        <div class="calendar-status ${calendar.status}">${calendar.statusMessage || calendar.status}</div>
+        <input class="calendar-name" value="${escapeHtml(calendar.name)}"
+               onchange="updateCalendarName('${escapeHtml(calendar.id)}', this.value)"
+               onblur="updateCalendarName('${escapeHtml(calendar.id)}', this.value)">
+        <div class="calendar-url">${escapeHtml(calendar.type === 'sample' ? '샘플 데이터' :
+          (calendar.url || calendar.calendarId || '').substring(0, 30))}${(calendar.url || calendar.calendarId || '').length > 30 ? '...' : ''}</div>
+        <div class="calendar-status ${calendar.status}">${escapeHtml(calendar.statusMessage || calendar.status)}</div>
       </div>
       <div class="calendar-actions">
-        <button class="toggle-btn ${calendar.visible ? 'visible' : 'hidden'}" 
-                onclick="toggleCalendarVisibility('${calendar.id}')" 
+        <button class="toggle-btn ${calendar.visible ? 'visible' : 'hidden'}"
+                onclick="toggleCalendarVisibility('${escapeHtml(calendar.id)}')"
                 title="${calendar.visible ? '숨기기' : '보이기'}">
           ${calendar.visible ? '👁️' : '🚫'}
         </button>
-        <button class="toggle-btn reload-btn" onclick="reloadCalendar('${calendar.id}')" title="새로고침">🔄</button>
-        <button class="toggle-btn remove-btn" onclick="removeCalendar('${calendar.id}')" title="삭제">❌</button>
+        <button class="toggle-btn reload-btn" onclick="reloadCalendar('${escapeHtml(calendar.id)}')" title="새로고침">🔄</button>
+        <button class="toggle-btn remove-btn" onclick="removeCalendar('${escapeHtml(calendar.id)}')" title="삭제">❌</button>
       </div>
     </div>
   `).join('');
@@ -1900,16 +1907,16 @@ function updateViewCalendarSettings() {
   
   container.innerHTML = views.map(view => `
     <div class="view-calendar-section">
-      <div style="font-weight: bold; margin-bottom: 8px; color: #333;">${view.name}</div>
+      <div style="font-weight: bold; margin-bottom: 8px; color: #333;">${escapeHtml(view.name)}</div>
       <div class="view-calendar-list">
         ${calendars.map(calendar => `
           <label class="view-calendar-item">
-            <input type="checkbox" 
+            <input type="checkbox"
                    ${viewCalendarSettings[view.key].includes(calendar.id) ? 'checked' : ''}
-                   onchange="toggleViewCalendar('${view.key}', '${calendar.id}')"
+                   onchange="toggleViewCalendar('${escapeHtml(view.key)}', '${escapeHtml(calendar.id)}')"
                    style="margin-right: 8px;">
-            <span class="calendar-color-dot" style="background-color: ${calendar.color}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
-            <span>${calendar.name}</span>
+            <span class="calendar-color-dot" style="background-color: ${escapeHtml(calendar.color)}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+            <span>${escapeHtml(calendar.name)}</span>
           </label>
         `).join('')}
       </div>
