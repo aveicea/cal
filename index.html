@@ -112,7 +112,7 @@
     width: 32px;
     height: 32px;
     border: none;
-    background: #f8f9fa;
+    background: transparent;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -121,9 +121,9 @@
     color: #666;
     transition: all 0.2s ease;
   }
-  
+
   .settings-btn:hover {
-    background: #e8eaed;
+    background: transparent;
     color: #333;
   }
   
@@ -474,6 +474,7 @@
     cursor: pointer;
     max-width: 100%;  /* 추가 */
     display: block;  /* 추가 */
+    text-align: center;  /* 가운데 정렬 */
   }
   
   /* 시간 기반 뷰 개선 */
@@ -2086,8 +2087,20 @@ function renderMonthView() {
     dayNumber.textContent = cellDate.getDate();
     cell.appendChild(dayNumber);
     
-    // 모든 이벤트 표시 (더 보기 없이)
+    // 모든 이벤트 표시 (시간순 정렬)
     const dayEvents = getAllEventsForDate(cellDate);
+
+    // 시간순으로 정렬 (종일 이벤트가 먼저, 그 다음 시간순)
+    dayEvents.sort((a, b) => {
+      if (a.time === '종일' && b.time !== '종일') return -1;
+      if (a.time !== '종일' && b.time === '종일') return 1;
+      if (a.time === '종일' && b.time === '종일') return 0;
+
+      const timeA = a.startTime || a.time || '00:00';
+      const timeB = b.startTime || b.time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+
     dayEvents.forEach(event => {
       const eventDiv = document.createElement('div');
       eventDiv.className = 'event';
@@ -2333,30 +2346,20 @@ function renderWeekView() {
         if (splitEvent.isNextDay) return;
         
         if (splitEvent.time === '종일') {
-          const eventDiv = document.createElement('div');
-          eventDiv.className = 'all-day-event';
-          eventDiv.style.backgroundColor = event.color;
-          eventDiv.style.color = '#333';
-          eventDiv.style.padding = '4px 8px';
-          eventDiv.style.fontSize = '0.6em';
-          eventDiv.style.borderRadius = '6px';
-          eventDiv.style.margin = '2px';
-          eventDiv.style.overflow = 'visible';
-          eventDiv.style.textOverflow = 'clip';
-          eventDiv.style.whiteSpace = 'normal';
-          eventDiv.style.position = 'absolute';
-          eventDiv.style.top = '2px';
-          eventDiv.style.left = '2px';
-          eventDiv.style.right = '2px';
-          eventDiv.style.height = 'calc(100% - 4px)';
-          eventDiv.textContent = splitEvent.title;
-          eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;                  //추가
-          eventDiv.style.wordWrap = 'break-word';
-          eventDiv.style.wordBreak = 'break-word';
-          eventDiv.style.lineHeight = '1.2';
-          eventDiv.style.minHeight = '20px';     // 최소 높이 보장
-          
-          dayCells[day][0].appendChild(eventDiv);
+          // 종일 이벤트는 작은 배지로만 표시
+          const badge = document.createElement('div');
+          badge.className = 'all-day-badge';
+          badge.style.backgroundColor = event.color;
+          badge.style.width = '6px';
+          badge.style.height = '6px';
+          badge.style.borderRadius = '50%';
+          badge.style.position = 'absolute';
+          badge.style.top = '2px';
+          badge.style.right = '2px';
+          badge.style.cursor = 'pointer';
+          badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+
+          dayCells[day][0].appendChild(badge);
         } else {
           const startHour = getEventHour(splitEvent.startTime);
           const endHour = getEventHour(splitEvent.endTime);
@@ -2614,30 +2617,20 @@ function renderDayView() {
       if (splitEvent.isNextDay) return;
       
       if (splitEvent.time === '종일') {
-        const eventDiv = document.createElement('div');
-        eventDiv.className = 'all-day-event';
-        eventDiv.style.backgroundColor = event.color;
-        eventDiv.style.color = '#333';
-        eventDiv.style.padding = '4px 8px';
-        eventDiv.style.fontSize = '0.6em';
-        eventDiv.style.borderRadius = '6px';
-        eventDiv.style.margin = '2px';
-        eventDiv.style.overflow = 'visible';
-        eventDiv.style.textOverflow = 'clip';
-        eventDiv.style.whiteSpace = 'normal';
-        eventDiv.style.position = 'absolute';
-        eventDiv.style.top = '2px';
-        eventDiv.style.left = '2px';
-        eventDiv.style.right = '2px';
-        eventDiv.style.height = 'calc(100% - 4px)';
-        eventDiv.textContent = splitEvent.title;
-        eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;                //추가
-        eventDiv.style.wordWrap = 'break-word';
-        eventDiv.style.wordBreak = 'break-word';
-        eventDiv.style.lineHeight = '1.2';
-        eventDiv.style.minHeight = '20px';     // 최소 높이 보장
-        
-        dayCells[0].appendChild(eventDiv);
+        // 종일 이벤트는 작은 배지로만 표시
+        const badge = document.createElement('div');
+        badge.className = 'all-day-badge';
+        badge.style.backgroundColor = event.color;
+        badge.style.width = '6px';
+        badge.style.height = '6px';
+        badge.style.borderRadius = '50%';
+        badge.style.position = 'absolute';
+        badge.style.top = '2px';
+        badge.style.right = '2px';
+        badge.style.cursor = 'pointer';
+        badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+
+        dayCells[0].appendChild(badge);
       } else {
         const startHour = getEventHour(splitEvent.startTime);
         const endHour = getEventHour(splitEvent.endTime);
@@ -2700,6 +2693,46 @@ function renderDayView() {
   for (let slot = 0; slot < SLOT_COUNT; slot++) {
     if (slotEventDivs[slot].length > 0) {
       applyRoundedCorners(slotEventDivs[slot]);
+    }
+  }
+
+  // 현재 시간 선 추가 (오늘 날짜일 때만)
+  const today = new Date();
+  if (currentDate.toDateString() === today.toDateString()) {
+    const currentTimeLine = document.createElement('div');
+    currentTimeLine.id = 'current-time-line';
+    currentTimeLine.style.position = 'absolute';
+    currentTimeLine.style.left = '80px';
+    currentTimeLine.style.right = '0';
+    currentTimeLine.style.height = '2px';
+    currentTimeLine.style.backgroundColor = '#ff4444';
+    currentTimeLine.style.zIndex = '100';
+    currentTimeLine.style.pointerEvents = 'none';
+
+    // 현재 시간 업데이트 함수
+    const updateCurrentTimeLine = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const slotIndex = getSlotIndex(hours);
+      const minuteOffset = minutes / 60;
+      const position = (slotIndex + minuteOffset) * 25 + 35; // 25px per slot + 35px header
+      currentTimeLine.style.top = position + 'px';
+    };
+
+    updateCurrentTimeLine();
+    grid.appendChild(currentTimeLine);
+
+    // 1분마다 업데이트
+    if (window.currentTimeLineInterval) {
+      clearInterval(window.currentTimeLineInterval);
+    }
+    window.currentTimeLineInterval = setInterval(updateCurrentTimeLine, 60000);
+  } else {
+    // 오늘이 아닌 날짜를 보고 있으면 인터벌 제거
+    if (window.currentTimeLineInterval) {
+      clearInterval(window.currentTimeLineInterval);
+      window.currentTimeLineInterval = null;
     }
   }
 
