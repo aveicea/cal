@@ -1862,7 +1862,7 @@ function updateCalendarList() {
   
   calendarList.innerHTML = calendars.map(calendar => `
     <div class="calendar-item ${calendar.visible ? 'active' : ''}" data-id="${escapeHtml(calendar.id)}">
-      <input type="color" value="${escapeHtml(calendar.color)}"
+      <input type="color" value="${calendar.color}"
              onchange="updateCalendarColor('${calendar.id}', this.value)"
              class="calendar-color-picker"
              title="캘린더 색상 변경">
@@ -1916,7 +1916,7 @@ function updateViewCalendarSettings() {
                    ${viewCalendarSettings[view.key].includes(calendar.id) ? 'checked' : ''}
                    onchange="toggleViewCalendar('${view.key}', '${calendar.id}')"
                    style="margin-right: 8px;">
-            <span class="calendar-color-dot" style="background-color: ${escapeHtml(calendar.color)}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+            <span class="calendar-color-dot" style="background-color: ${calendar.color}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
             <span>${escapeHtml(calendar.name)}</span>
           </label>
         `).join('')}
