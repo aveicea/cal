@@ -2713,8 +2713,9 @@ function renderDayView() {
   if (currentDate.toDateString() === adjustedToday.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
+    currentTimeLine.style.gridColumn = '2'; // 이벤트 칸에만 표시
     currentTimeLine.style.position = 'absolute';
-    currentTimeLine.style.left = '81px';
+    currentTimeLine.style.left = '1px';
     currentTimeLine.style.right = '1px';
     currentTimeLine.style.height = '1px';
     currentTimeLine.style.backgroundColor = '#ff4444';
