@@ -2162,6 +2162,7 @@ function renderMonthView() {
       const eventDiv = document.createElement('div');
       eventDiv.className = 'event';
       eventDiv.style.backgroundColor = event.color;
+      eventDiv.style.color = eventTextColor;
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
       cell.appendChild(eventDiv);
