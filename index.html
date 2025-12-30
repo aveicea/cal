@@ -890,6 +890,30 @@
   </div>
 </div>
 
+<!-- 텍스트 정렬 설정 -->
+<div class="text-align-section">
+  <div class="toggle-header" onclick="toggleSection('textAlignContent', 'textAlignToggleIcon')">
+    <div class="color-picker-title">일정 텍스트 정렬</div>
+    <div class="toggle-icon" id="textAlignToggleIcon">▼</div>
+  </div>
+  <div class="toggle-content" id="textAlignContent">
+    <div class="input-group">
+      <label>가로 정렬</label>
+      <select id="textAlignHorizontal" onchange="updateTextAlignment()">
+        <option value="left">왼쪽</option>
+        <option value="center">가운데</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>세로 정렬</label>
+      <select id="textAlignVertical" onchange="updateTextAlignment()">
+        <option value="top">위</option>
+        <option value="center">중간</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 <!-- 연동된 캘린더 목록 -->
 <div class="calendar-list-section">
   <div class="toggle-header" onclick="toggleSection('calendarListContent', 'listToggleIcon')">
@@ -1009,9 +1033,13 @@ let debugMessages = [];
 
 let viewCalendarSettings = {
   day: [],    // 일간뷰에서 보일 캘린더 ID 배열
-  week: [],   // 주간뷰에서 보일 캘린더 ID 배열  
+  week: [],   // 주간뷰에서 보일 캘린더 ID 배열
   month: []   // 월간뷰에서 보일 캘린더 ID 배열
 };
+
+// 텍스트 정렬 설정
+let textAlignHorizontal = 'center'; // 'left' or 'center'
+let textAlignVertical = 'center';   // 'top' or 'center'
 
 
 // 캘린더 색상 팔레트
@@ -1172,6 +1200,15 @@ function updateCurrentDateDisplay() {
     const options = { year: 'numeric', month: 'long' };
     currentDateElement.textContent = currentDate.toLocaleDateString('ko-KR', options);
   }
+}
+
+// 텍스트 정렬 업데이트
+function updateTextAlignment() {
+  textAlignHorizontal = document.getElementById('textAlignHorizontal').value;
+  textAlignVertical = document.getElementById('textAlignVertical').value;
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`텍스트 정렬 변경: 가로=${textAlignHorizontal}, 세로=${textAlignVertical}`);
 }
 
 // 색상 관리
@@ -2401,8 +2438,8 @@ function renderWeekView() {
           eventDiv.style.position = 'absolute';
           eventDiv.style.boxSizing = 'border-box';
           eventDiv.style.display = 'flex';
-          eventDiv.style.alignItems = 'center'; // 세로 가운데 정렬
-          eventDiv.style.justifyContent = 'center'; // 가로 가운데 정렬
+          eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
+          eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
                   //추가
           eventDiv.style.wordWrap = 'break-word';
           eventDiv.style.wordBreak = 'break-word';
@@ -2492,8 +2529,8 @@ function renderWeekView() {
     eventDiv.style.position = 'absolute';
     eventDiv.style.boxSizing = 'border-box';
     eventDiv.style.display = 'flex';
-    eventDiv.style.alignItems = 'center'; // 세로 가운데 정렬
-    eventDiv.style.justifyContent = 'center'; // 가로 가운데 정렬
+    eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
+    eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
     eventDiv.style.zIndex = 100 + currentEventIndex;
     eventDiv.style.wordWrap = 'break-word';
     eventDiv.style.wordBreak = 'break-word';
@@ -2680,8 +2717,8 @@ function renderDayView() {
         eventDiv.style.position = 'absolute';
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.display = 'flex';
-        eventDiv.style.alignItems = 'center'; // 세로 가운데 정렬
-        eventDiv.style.justifyContent = 'center'; // 가로 가운데 정렬
+        eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
+        eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
         //추가
         eventDiv.style.wordWrap = 'break-word';
@@ -2959,6 +2996,8 @@ function saveToStorage() {
       accentColor: accentColor,
       accentHoverColor: accentHoverColor,
       viewCalendarSettings: viewCalendarSettings,
+      textAlignHorizontal: textAlignHorizontal,
+      textAlignVertical: textAlignVertical,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3123,10 +3162,13 @@ function loadFromStorage() {
       accentColor = parsed.accentColor || '#D1D1D1';
       accentHoverColor = parsed.accentHoverColor || darkenColor(accentColor, 15);
       viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
-      viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
+      textAlignHorizontal = parsed.textAlignHorizontal || 'center';
+      textAlignVertical = parsed.textAlignVertical || 'center';
       calendars = parsed.calendars || [];
-      
+
       // UI 복원
+      document.getElementById('textAlignHorizontal').value = textAlignHorizontal;
+      document.getElementById('textAlignVertical').value = textAlignVertical;
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
