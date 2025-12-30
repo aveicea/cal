@@ -2528,7 +2528,8 @@ function renderDayView() {
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = '550px'; 
+  grid.style.height = '550px';
+  grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
   const timeHeader = document.createElement('div');
