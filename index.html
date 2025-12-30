@@ -2106,8 +2106,8 @@ function renderMonthView() {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = new Date(firstDay);
-  const mondayOffset = (firstDay.getDay() + 6) % 7;
-  startDate.setDate(startDate.getDate() - mondayOffset);
+  const sundayOffset = firstDay.getDay(); // 일요일 기준 (0 = 일요일)
+  startDate.setDate(startDate.getDate() - sundayOffset);
   
   const grid = document.createElement('div');
   grid.className = 'calendar-grid month-view';
