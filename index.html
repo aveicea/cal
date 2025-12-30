@@ -2257,6 +2257,9 @@ function renderWeekView() {
   timeHeader.style.textAlign = 'center';
   grid.appendChild(timeHeader);
 
+  // 요일 헤더 저장용 배열
+  const dayHeaders = [];
+
   // 요일 헤더
   for (let i = 0; i < 7; i++) {
     const date = new Date(startOfWeek);
@@ -2270,6 +2273,7 @@ function renderWeekView() {
     header.style.backgroundColor = '#f5f5f5';
     header.style.padding = '8px';
     header.style.textAlign = 'center';
+    header.style.position = 'relative'; // 배지 위치 기준점
 
     if (date.toDateString() === (new Date()).toDateString()) {
       header.style.backgroundColor = accentColor;
@@ -2286,6 +2290,7 @@ function renderWeekView() {
     dayNumber.style.color = '#666';
     header.appendChild(dayNumber);
 
+    dayHeaders.push(header);
     grid.appendChild(header);
   }
 
@@ -2352,16 +2357,16 @@ function renderWeekView() {
           const badge = document.createElement('div');
           badge.className = 'all-day-badge';
           badge.style.backgroundColor = event.color;
-          badge.style.width = '6px';
-          badge.style.height = '6px';
+          badge.style.width = '10px';
+          badge.style.height = '10px';
           badge.style.borderRadius = '50%';
           badge.style.position = 'absolute';
           badge.style.top = '2px';
-          badge.style.right = (2 + allDayBadgeCount * 8) + 'px'; // 8px 간격으로 배치
+          badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
           badge.style.cursor = 'pointer';
           badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
-          dayCells[day][0].appendChild(badge);
+          dayHeaders[day].appendChild(badge);
           allDayBadgeCount++;
         } else {
           const startHour = getEventHour(splitEvent.startTime);
@@ -2627,12 +2632,12 @@ function renderDayView() {
         const badge = document.createElement('div');
         badge.className = 'all-day-badge';
         badge.style.backgroundColor = event.color;
-        badge.style.width = '6px';
-        badge.style.height = '6px';
+        badge.style.width = '10px';
+        badge.style.height = '10px';
         badge.style.borderRadius = '50%';
         badge.style.position = 'absolute';
         badge.style.top = '2px';
-        badge.style.right = (2 + allDayBadgeCount * 8) + 'px'; // 8px 간격으로 배치
+        badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
         badge.style.cursor = 'pointer';
         badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
