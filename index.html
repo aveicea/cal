@@ -2698,7 +2698,6 @@ function renderDayView() {
   }
 
   // 현재 시간 선 추가 (오늘 날짜일 때만)
-  const today = new Date();
   if (currentDate.toDateString() === today.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
