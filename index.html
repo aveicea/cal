@@ -428,9 +428,7 @@
     gap: 1px;
     background: #e0e0e0;
     border: 1px solid #e0e0e0;
-    height: calc(100vh - 150px);
     min-height: 250px;
-    max-height: 400px;
     width: 100%;  /* 추가 */
     table-layout: fixed;  /* 추가 - 고정 레이아웃 */
   }
@@ -2292,7 +2290,6 @@ function renderWeekView() {
 
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '600px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
@@ -2301,7 +2298,6 @@ function renderWeekView() {
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = '500px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -2588,7 +2584,6 @@ function renderWeekView() {
 function renderDayView() {
   const container = document.createElement('div');
   container.style.padding = '20px';
-  container.style.height = '600px';
   container.style.overflow = 'visible';
 
   const grid = document.createElement('div');
@@ -2597,7 +2592,6 @@ function renderDayView() {
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = '550px';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
