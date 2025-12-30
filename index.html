@@ -2571,6 +2571,7 @@ function renderDayView() {
   dayHeader.style.border = '1px solid #e0e0e0';
   dayHeader.style.padding = '8px';
   dayHeader.style.textAlign = 'center';
+  dayHeader.style.position = 'relative'; // 배지 위치 기준점
   grid.appendChild(dayHeader);
 
   // 셀 저장용 배열
@@ -2635,7 +2636,7 @@ function renderDayView() {
         badge.style.cursor = 'pointer';
         badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
-        dayCells[0].appendChild(badge);
+        dayHeader.appendChild(badge);
         allDayBadgeCount++;
       } else {
         const startHour = getEventHour(splitEvent.startTime);
@@ -2713,8 +2714,9 @@ function renderDayView() {
   if (currentDate.toDateString() === adjustedToday.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
+    currentTimeLine.style.gridColumn = '2'; // 이벤트 칸에만 표시
     currentTimeLine.style.position = 'absolute';
-    currentTimeLine.style.left = '81px';
+    currentTimeLine.style.left = '1px';
     currentTimeLine.style.right = '1px';
     currentTimeLine.style.height = '1px';
     currentTimeLine.style.backgroundColor = '#ff4444';
