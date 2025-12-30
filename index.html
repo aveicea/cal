@@ -957,6 +957,7 @@
         <option value="ical">iCal 링크 (.ics)</option>
         <option value="googlePublic">구글 캘린더 공개 링크</option>
         <option value="api">구글 캘린더 API</option>
+        <option value="notion">노션 데이터베이스</option>
       </select>
     </div>
     
@@ -1001,7 +1002,39 @@
         <input type="text" id="calendarId" placeholder="primary 또는 이메일@gmail.com">
       </div>
     </div>
-    
+
+    <div id="notionInputs" class="calendar-inputs">
+      <div class="input-group">
+        <label>Notion API Key</label>
+        <input type="text" id="notionApiKey" placeholder="secret_xxx...">
+        <div class="help-text">
+          notion.so → Settings & members → Integrations에서 생성한 Internal Integration의 Secret을 입력하세요.
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Database ID</label>
+        <input type="text" id="notionDatabaseId" placeholder="데이터베이스 URL의 ID 부분">
+        <div class="help-text">
+          데이터베이스 URL에서 32자리 ID를 복사하세요.<br>
+          예: https://notion.so/{workspace}/[이 부분]?v=...
+        </div>
+      </div>
+      <div class="input-group">
+        <label>날짜 속성 이름</label>
+        <input type="text" id="notionDateProperty" placeholder="예: Date, 날짜" value="Date">
+        <div class="help-text">
+          데이터베이스에서 날짜 정보를 담고 있는 속성(컬럼) 이름
+        </div>
+      </div>
+      <div class="input-group">
+        <label>제목 속성 이름</label>
+        <input type="text" id="notionTitleProperty" placeholder="예: Name, 제목" value="Name">
+        <div class="help-text">
+          데이터베이스에서 일정 제목을 담고 있는 속성(컬럼) 이름
+        </div>
+      </div>
+    </div>
+
     <button class="btn btn-primary" onclick="addCalendar()">캘린더 추가</button>
   </div>
 </div>
@@ -1280,13 +1313,15 @@ function updateCalendarInputs() {
 // 캘린더 이벤트 로드
 async function loadCalendarEvents(calendar) {
   addDebugLog(`이벤트 로드 시작: ${calendar.name} (${calendar.type})`);
-  
+
   if (calendar.type === 'ical') {
     await loadIcalEvents(calendar);
   } else if (calendar.type === 'googlePublic') {
     await loadGooglePublicEvents(calendar);
   } else if (calendar.type === 'api') {
     await loadApiEvents(calendar);
+  } else if (calendar.type === 'notion') {
+    await loadNotionEvents(calendar);
   }
 }
 
@@ -1481,6 +1516,85 @@ async function loadApiEvents(calendar) {
     
   } catch (error) {
     addDebugLog(`API 캘린더 로드 실패: ${error.message}`);
+    throw error;
+  }
+}
+
+// Notion 이벤트 로드
+async function loadNotionEvents(calendar) {
+  const databaseId = calendar.notionDatabaseId;
+  const apiKey = calendar.notionApiKey;
+  const dateProperty = calendar.notionDateProperty;
+  const titleProperty = calendar.notionTitleProperty;
+
+  try {
+    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        page_size: 100
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Notion API 오류 ${response.status}: ${errorData.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    calendar.events = data.results.map(page => {
+      // 제목 추출
+      const titleProp = page.properties[titleProperty];
+      let title = '제목 없음';
+      if (titleProp) {
+        if (titleProp.title && titleProp.title.length > 0) {
+          title = titleProp.title[0].plain_text;
+        } else if (titleProp.rich_text && titleProp.rich_text.length > 0) {
+          title = titleProp.rich_text[0].plain_text;
+        }
+      }
+
+      // 날짜 추출
+      const dateProp = page.properties[dateProperty];
+      let dateStr = null;
+      let startTime = '종일';
+      let endTime = '종일';
+
+      if (dateProp && dateProp.date) {
+        const startDate = new Date(dateProp.date.start);
+        dateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+
+        // 시간 정보가 있는 경우
+        if (dateProp.date.start.includes('T')) {
+          startTime = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          if (dateProp.date.end) {
+            const endDate = new Date(dateProp.date.end);
+            endTime = endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          }
+        }
+      }
+
+      return {
+        title: title,
+        date: dateStr,
+        startTime: startTime,
+        endTime: endTime,
+        time: startTime,
+        color: calendar.color,
+        description: '',
+        location: ''
+      };
+    }).filter(event => event.date !== null); // 날짜가 없는 항목 제외
+
+    addDebugLog(`Notion 데이터베이스 로드 완료: ${calendar.events.length}개 이벤트`);
+
+  } catch (error) {
+    addDebugLog(`Notion 데이터베이스 로드 실패: ${error.message}`);
     throw error;
   }
 }
@@ -2942,7 +3056,11 @@ async function addCalendar() {
   let url = '';
   let calendarId = '';
   let apiKey = '';
-  
+  let notionApiKey = '';
+  let notionDatabaseId = '';
+  let notionDateProperty = '';
+  let notionTitleProperty = '';
+
   if (type === 'ical') {
     url = document.getElementById('icalUrl').value.trim();
     if (!url || !url.includes('.ics')) {
@@ -2962,8 +3080,17 @@ async function addCalendar() {
       alert('API 키를 입력해주세요.');
       return;
     }
+  } else if (type === 'notion') {
+    notionApiKey = document.getElementById('notionApiKey').value.trim();
+    notionDatabaseId = document.getElementById('notionDatabaseId').value.trim();
+    notionDateProperty = document.getElementById('notionDateProperty').value.trim() || 'Date';
+    notionTitleProperty = document.getElementById('notionTitleProperty').value.trim() || 'Name';
+    if (!notionApiKey || !notionDatabaseId) {
+      alert('Notion API Key와 Database ID를 모두 입력해주세요.');
+      return;
+    }
   }
-  
+
   const calendar = {
     id: Date.now().toString(),
     name: name,
@@ -2973,6 +3100,10 @@ async function addCalendar() {
     url: url,
     calendarId: calendarId,
     apiKey: apiKey,
+    notionApiKey: notionApiKey,
+    notionDatabaseId: notionDatabaseId,
+    notionDateProperty: notionDateProperty,
+    notionTitleProperty: notionTitleProperty,
     events: [],
     status: 'loading',
     statusMessage: '로딩 중...'
