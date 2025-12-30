@@ -2728,6 +2728,18 @@ function renderDayView() {
     currentTimeLine.style.zIndex = '100';
     currentTimeLine.style.pointerEvents = 'none';
 
+    // 시간 표시 라벨
+    const timeLabel = document.createElement('div');
+    timeLabel.id = 'current-time-label';
+    timeLabel.style.position = 'absolute';
+    timeLabel.style.right = '4px';
+    timeLabel.style.bottom = '2px';
+    timeLabel.style.fontSize = '10px';
+    timeLabel.style.color = '#ff4444';
+    timeLabel.style.fontWeight = 'bold';
+    timeLabel.style.pointerEvents = 'none';
+    currentTimeLine.appendChild(timeLabel);
+
     // 현재 시간 업데이트 함수
     const updateCurrentTimeLine = () => {
       const now = new Date();
@@ -2737,6 +2749,7 @@ function renderDayView() {
       const minuteOffset = minutes / 60;
       const position = (slotIndex + minuteOffset) * 25 + 35; // 25px per slot + 35px header
       currentTimeLine.style.top = position + 'px';
+      timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     };
 
     updateCurrentTimeLine();
