@@ -2702,8 +2702,15 @@ function renderDayView() {
     }
   }
 
-  // 현재 시간 선 추가 (오늘 날짜일 때만)
-  if (currentDate.toDateString() === today.toDateString()) {
+  // 현재 시간 선 추가 (오늘 날짜일 때만, 6시 기준 고려)
+  const now = new Date();
+  const nowHour = now.getHours();
+  const adjustedToday = new Date();
+  if (nowHour < 6) {
+    adjustedToday.setDate(adjustedToday.getDate() - 1);
+  }
+
+  if (currentDate.toDateString() === adjustedToday.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
     currentTimeLine.style.position = 'absolute';
