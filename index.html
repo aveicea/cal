@@ -1152,6 +1152,10 @@ function navigateCalendar(direction) {
 
 function goToToday() {
   currentDate = new Date();
+  // 6시 기준으로 조정: 0-5시면 전날을 표시
+  if (currentDate.getHours() < 6) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
   updateCurrentDateDisplay();
   renderCalendar();
 }
