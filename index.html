@@ -2339,13 +2339,14 @@ function renderWeekView() {
     const dayEvents = getAllEventsForDate(date);
     const eventCounts = Array(SLOT_COUNT).fill(0); // 각 슬롯별 이벤트 개수
     const slotEventDivs = Array(SLOT_COUNT).fill().map(() => []); // 각 슬롯별 이벤트 div 저장
-    
+    let allDayBadgeCount = 0; // 종일 이벤트 배지 개수
+
     dayEvents.forEach((event) => {
       const splitEvents = splitCrossDayEvent(event);
-      
+
       splitEvents.forEach((splitEvent) => {
         if (splitEvent.isNextDay) return;
-        
+
         if (splitEvent.time === '종일') {
           // 종일 이벤트는 작은 배지로만 표시
           const badge = document.createElement('div');
@@ -2356,11 +2357,12 @@ function renderWeekView() {
           badge.style.borderRadius = '50%';
           badge.style.position = 'absolute';
           badge.style.top = '2px';
-          badge.style.right = '2px';
+          badge.style.right = (2 + allDayBadgeCount * 8) + 'px'; // 8px 간격으로 배치
           badge.style.cursor = 'pointer';
           badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
           dayCells[day][0].appendChild(badge);
+          allDayBadgeCount++;
         } else {
           const startHour = getEventHour(splitEvent.startTime);
           const endHour = getEventHour(splitEvent.endTime);
@@ -2610,13 +2612,14 @@ function renderDayView() {
   const dayEvents = getAllEventsForDate(currentDate);
   const eventCounts = Array(SLOT_COUNT).fill(0);
   const slotEventDivs = Array(SLOT_COUNT).fill().map(() => []);
-  
+  let allDayBadgeCount = 0; // 종일 이벤트 배지 개수
+
   dayEvents.forEach((event) => {
     const splitEvents = splitCrossDayEvent(event);
-    
+
     splitEvents.forEach((splitEvent) => {
       if (splitEvent.isNextDay) return;
-      
+
       if (splitEvent.time === '종일') {
         // 종일 이벤트는 작은 배지로만 표시
         const badge = document.createElement('div');
@@ -2627,11 +2630,12 @@ function renderDayView() {
         badge.style.borderRadius = '50%';
         badge.style.position = 'absolute';
         badge.style.top = '2px';
-        badge.style.right = '2px';
+        badge.style.right = (2 + allDayBadgeCount * 8) + 'px'; // 8px 간격으로 배치
         badge.style.cursor = 'pointer';
         badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
         dayCells[0].appendChild(badge);
+        allDayBadgeCount++;
       } else {
         const startHour = getEventHour(splitEvent.startTime);
         const endHour = getEventHour(splitEvent.endTime);
@@ -2702,9 +2706,9 @@ function renderDayView() {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
     currentTimeLine.style.position = 'absolute';
-    currentTimeLine.style.left = '80px';
-    currentTimeLine.style.right = '0';
-    currentTimeLine.style.height = '2px';
+    currentTimeLine.style.left = '81px';
+    currentTimeLine.style.right = '1px';
+    currentTimeLine.style.height = '1px';
     currentTimeLine.style.backgroundColor = '#ff4444';
     currentTimeLine.style.zIndex = '100';
     currentTimeLine.style.pointerEvents = 'none';
