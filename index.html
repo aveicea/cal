@@ -911,6 +911,13 @@
         <option value="center">중간</option>
       </select>
     </div>
+    <div class="input-group">
+      <label>글자 색상</label>
+      <select id="eventTextColor" onchange="updateTextAlignment()">
+        <option value="white">흰색</option>
+        <option value="black">검은색</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -1040,6 +1047,7 @@ let viewCalendarSettings = {
 // 텍스트 정렬 설정
 let textAlignHorizontal = 'center'; // 'left' or 'center'
 let textAlignVertical = 'center';   // 'top' or 'center'
+let eventTextColor = 'white';       // 'white' or 'black'
 
 
 // 캘린더 색상 팔레트
@@ -1206,9 +1214,10 @@ function updateCurrentDateDisplay() {
 function updateTextAlignment() {
   textAlignHorizontal = document.getElementById('textAlignHorizontal').value;
   textAlignVertical = document.getElementById('textAlignVertical').value;
+  eventTextColor = document.getElementById('eventTextColor').value;
   saveToStorage();
   renderCalendar();
-  addDebugLog(`텍스트 정렬 변경: 가로=${textAlignHorizontal}, 세로=${textAlignVertical}`);
+  addDebugLog(`텍스트 설정 변경: 가로=${textAlignHorizontal}, 세로=${textAlignVertical}, 색상=${eventTextColor}`);
 }
 
 // 색상 관리
@@ -2429,7 +2438,7 @@ function renderWeekView() {
           const eventDiv = document.createElement('div');
           eventDiv.className = 'time-event';
           eventDiv.style.backgroundColor = event.color;
-          eventDiv.style.color = 'white';
+          eventDiv.style.color = eventTextColor;
           eventDiv.style.padding = '2px 6px';
           eventDiv.style.fontSize = '0.6em';
           eventDiv.style.overflow = 'visible';
@@ -2520,7 +2529,7 @@ function renderWeekView() {
     const eventDiv = document.createElement('div');
     eventDiv.className = 'time-event';
     eventDiv.style.backgroundColor = event.color;
-    eventDiv.style.color = 'white';
+    eventDiv.style.color = eventTextColor;
     eventDiv.style.padding = '2px 6px';
     eventDiv.style.fontSize = '0.6em';
     eventDiv.style.overflow = 'visible';
@@ -2708,7 +2717,7 @@ function renderDayView() {
         const eventDiv = document.createElement('div');
         eventDiv.className = 'time-event';
         eventDiv.style.backgroundColor = event.color;
-        eventDiv.style.color = '#333';
+        eventDiv.style.color = eventTextColor;
         eventDiv.style.padding = '2px 6px';
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.overflow = 'visible';
@@ -2998,6 +3007,7 @@ function saveToStorage() {
       viewCalendarSettings: viewCalendarSettings,
       textAlignHorizontal: textAlignHorizontal,
       textAlignVertical: textAlignVertical,
+      eventTextColor: eventTextColor,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3164,11 +3174,13 @@ function loadFromStorage() {
       viewCalendarSettings = parsed.viewCalendarSettings || { day: [], week: [], month: [] };
       textAlignHorizontal = parsed.textAlignHorizontal || 'center';
       textAlignVertical = parsed.textAlignVertical || 'center';
+      eventTextColor = parsed.eventTextColor || 'white';
       calendars = parsed.calendars || [];
 
       // UI 복원
       document.getElementById('textAlignHorizontal').value = textAlignHorizontal;
       document.getElementById('textAlignVertical').value = textAlignVertical;
+      document.getElementById('eventTextColor').value = eventTextColor;
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
