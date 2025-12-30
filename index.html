@@ -1031,8 +1031,9 @@ const debugLog = document.getElementById("debugLog");
 
 // HTML 이스케이프 함수 (XSS 방지)
 function escapeHtml(text) {
+  if (text == null) return '';
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = String(text);
   return div.innerHTML;
 }
 
