@@ -923,6 +923,16 @@
         <option value="black">검은색</option>
       </select>
     </div>
+    <div class="input-group">
+      <label>글자 크기</label>
+      <select id="eventFontSize" onchange="updateTextAlignment()">
+        <option value="0.5em">매우 작게</option>
+        <option value="0.6em" selected>작게</option>
+        <option value="0.7em">보통</option>
+        <option value="0.8em">크게</option>
+        <option value="0.9em">매우 크게</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -1086,6 +1096,7 @@ let viewCalendarSettings = {
 let textAlignHorizontal = 'center'; // 'left' or 'center'
 let textAlignVertical = 'center';   // 'top' or 'center'
 let eventTextColor = 'white';       // 'white' or 'black'
+let eventFontSize = '0.6em';        // 일정 글씨 크기
 
 
 // 캘린더 색상 팔레트
@@ -1253,9 +1264,10 @@ function updateTextAlignment() {
   textAlignHorizontal = document.getElementById('textAlignHorizontal').value;
   textAlignVertical = document.getElementById('textAlignVertical').value;
   eventTextColor = document.getElementById('eventTextColor').value;
+  eventFontSize = document.getElementById('eventFontSize').value;
   saveToStorage();
   renderCalendar();
-  addDebugLog(`텍스트 설정 변경: 가로=${textAlignHorizontal}, 세로=${textAlignVertical}, 색상=${eventTextColor}`);
+  addDebugLog(`텍스트 설정 변경: 가로=${textAlignHorizontal}, 세로=${textAlignVertical}, 색상=${eventTextColor}, 크기=${eventFontSize}`);
 }
 
 // 색상 관리
@@ -2360,6 +2372,7 @@ function renderMonthView() {
       eventDiv.className = 'event';
       eventDiv.style.backgroundColor = event.color;
       eventDiv.style.color = eventTextColor;
+      eventDiv.style.fontSize = eventFontSize;
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
       cell.appendChild(eventDiv);
@@ -2677,7 +2690,7 @@ function renderWeekView() {
           }
 
           eventDiv.style.color = eventTextColor;
-          eventDiv.style.fontSize = '0.6em';
+          eventDiv.style.fontSize = eventFontSize;
           eventDiv.style.overflow = 'visible';
           eventDiv.style.textOverflow = 'clip';
           eventDiv.style.whiteSpace = 'normal';
@@ -2912,7 +2925,7 @@ function renderDayView() {
         }
 
         eventDiv.style.color = eventTextColor;
-        eventDiv.style.fontSize = '0.6em';
+        eventDiv.style.fontSize = eventFontSize;
         eventDiv.style.overflow = 'visible';
         eventDiv.style.textOverflow = 'clip';
         eventDiv.style.whiteSpace = 'normal';
@@ -3283,6 +3296,7 @@ function saveToStorage() {
       textAlignHorizontal: textAlignHorizontal,
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
+      eventFontSize: eventFontSize,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3315,6 +3329,10 @@ function exportCalendarSettings() {
       accentColor: accentColor,
       accentHoverColor: accentHoverColor,
       viewCalendarSettings: viewCalendarSettings,
+      textAlignHorizontal: textAlignHorizontal,
+      textAlignVertical: textAlignVertical,
+      eventTextColor: eventTextColor,
+      eventFontSize: eventFontSize,
       calendars: calendars.map(cal => ({
         id: cal.id,
         name: cal.name,
@@ -3377,7 +3395,25 @@ async function importCalendarSettings(fileInput) {
     if (importData.viewCalendarSettings) {
       viewCalendarSettings = importData.viewCalendarSettings;
     }
-    
+
+    // 텍스트 설정 복원
+    if (importData.textAlignHorizontal) {
+      textAlignHorizontal = importData.textAlignHorizontal;
+      document.getElementById('textAlignHorizontal').value = textAlignHorizontal;
+    }
+    if (importData.textAlignVertical) {
+      textAlignVertical = importData.textAlignVertical;
+      document.getElementById('textAlignVertical').value = textAlignVertical;
+    }
+    if (importData.eventTextColor) {
+      eventTextColor = importData.eventTextColor;
+      document.getElementById('eventTextColor').value = eventTextColor;
+    }
+    if (importData.eventFontSize) {
+      eventFontSize = importData.eventFontSize;
+      document.getElementById('eventFontSize').value = eventFontSize;
+    }
+
     // 캘린더 복원 및 이벤트 로드
     calendars = [...backupCalendars]; // sample 캘린더는 유지
     
@@ -3450,12 +3486,14 @@ function loadFromStorage() {
       textAlignHorizontal = parsed.textAlignHorizontal || 'center';
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
+      eventFontSize = parsed.eventFontSize || '0.6em';
       calendars = parsed.calendars || [];
 
       // UI 복원
       document.getElementById('textAlignHorizontal').value = textAlignHorizontal;
       document.getElementById('textAlignVertical').value = textAlignVertical;
       document.getElementById('eventTextColor').value = eventTextColor;
+      document.getElementById('eventFontSize').value = eventFontSize;
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
