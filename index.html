@@ -842,6 +842,92 @@
     background: rgba(0,0,0,0.1);
   }
 
+  /* 이벤트 모달 스타일 */
+  .event-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+  }
+
+  .event-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .event-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .event-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+
+  .modal-close-btn:hover {
+    background: #f0f0f0;
+  }
+
+  .event-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .event-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn-danger {
+    background: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #c82333;
+  }
+
 </style>
 </head>
 <body>
@@ -1107,6 +1193,56 @@
   </div>
 </div>
 
+<!-- 이벤트 상세/수정 모달 -->
+<div class="event-modal-overlay" id="eventModalOverlay" onclick="closeEventModal()"></div>
+<div class="event-modal" id="eventModal">
+  <div class="event-modal-header">
+    <h3>일정 상세</h3>
+    <button class="modal-close-btn" onclick="closeEventModal()">×</button>
+  </div>
+  <div class="event-modal-body">
+    <div class="input-group">
+      <label>제목</label>
+      <input type="text" id="eventEditTitle" placeholder="일정 제목">
+    </div>
+    <div class="input-group">
+      <label>날짜</label>
+      <input type="date" id="eventEditDate">
+    </div>
+    <div class="input-group">
+      <label>시작 시간</label>
+      <input type="time" id="eventEditStartTime">
+    </div>
+    <div class="input-group">
+      <label>종료 시간</label>
+      <input type="time" id="eventEditEndTime">
+    </div>
+    <div class="input-group">
+      <label>위치</label>
+      <input type="text" id="eventEditLocation" placeholder="위치 (선택)">
+    </div>
+    <div class="input-group">
+      <label>설명</label>
+      <textarea id="eventEditDescription" rows="3" placeholder="설명 (선택)"></textarea>
+    </div>
+    <div class="input-group">
+      <label>캘린더</label>
+      <div id="eventEditCalendarInfo" style="color: #666; font-size: 13px;"></div>
+    </div>
+  </div>
+  <div class="event-modal-footer">
+    <button class="btn btn-danger" id="eventDeleteBtn" onclick="deleteEvent()" style="margin-right: auto;">
+      삭제
+    </button>
+    <button class="btn btn-secondary" onclick="closeEventModal()">
+      취소
+    </button>
+    <button class="btn btn-primary" onclick="saveEventChanges()">
+      저장
+    </button>
+  </div>
+</div>
+
 <script>
 // 전역 변수
 let currentView = 'day';
@@ -1127,6 +1263,9 @@ let googleClientId = '';
 let googleAccessToken = null;
 let googleTokenClient = null;
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar';
+
+// 현재 수정 중인 이벤트
+let currentEditingEvent = null;
 
 // 텍스트 정렬 설정
 let textAlignHorizontal = 'center'; // 'left' or 'center'
@@ -1321,6 +1460,83 @@ function updateGoogleSignInUI(isSignedIn) {
     statusDiv.textContent = '연결 안 됨';
     statusDiv.style.color = '#666';
   }
+}
+
+// 이벤트 모달 관련 함수들
+function openEventModal(event) {
+  currentEditingEvent = event;
+
+  // 모달 필드 채우기
+  document.getElementById('eventEditTitle').value = event.title || '';
+  document.getElementById('eventEditDate').value = event.date || '';
+  document.getElementById('eventEditStartTime').value = event.startTime || '';
+  document.getElementById('eventEditEndTime').value = event.endTime || '';
+  document.getElementById('eventEditLocation').value = event.location || '';
+  document.getElementById('eventEditDescription').value = event.description || '';
+  document.getElementById('eventEditCalendarInfo').textContent = event.calendarName || '알 수 없음';
+
+  // 읽기 전용 캘린더면 수정 불가
+  const calendar = calendars.find(c => c.name === event.calendarName);
+  const isEditable = calendar && calendar.type === 'api' && googleAccessToken;
+
+  document.getElementById('eventEditTitle').disabled = !isEditable;
+  document.getElementById('eventEditDate').disabled = !isEditable;
+  document.getElementById('eventEditStartTime').disabled = !isEditable;
+  document.getElementById('eventEditEndTime').disabled = !isEditable;
+  document.getElementById('eventEditLocation').disabled = !isEditable;
+  document.getElementById('eventEditDescription').disabled = !isEditable;
+
+  const saveBtn = document.querySelector('.event-modal-footer .btn-primary');
+  const deleteBtn = document.getElementById('eventDeleteBtn');
+
+  if (!isEditable) {
+    saveBtn.style.display = 'none';
+    deleteBtn.style.display = 'none';
+    if (!googleAccessToken) {
+      document.getElementById('eventEditCalendarInfo').innerHTML =
+        event.calendarName + '<br><span style="color: #dc3545; font-size: 12px;">⚠️ 수정하려면 구글 계정을 연결하세요</span>';
+    } else {
+      document.getElementById('eventEditCalendarInfo').innerHTML =
+        event.calendarName + '<br><span style="color: #999; font-size: 12px;">ⓘ 읽기 전용 캘린더</span>';
+    }
+  } else {
+    saveBtn.style.display = 'inline-block';
+    deleteBtn.style.display = 'inline-block';
+  }
+
+  // 모달 표시
+  document.getElementById('eventModalOverlay').style.display = 'block';
+  document.getElementById('eventModal').style.display = 'flex';
+}
+
+function closeEventModal() {
+  document.getElementById('eventModalOverlay').style.display = 'none';
+  document.getElementById('eventModal').style.display = 'none';
+  currentEditingEvent = null;
+}
+
+async function saveEventChanges() {
+  if (!currentEditingEvent || !googleAccessToken) {
+    alert('일정을 수정할 수 없습니다.');
+    return;
+  }
+
+  // 다음 단계에서 API 호출 구현
+  alert('저장 기능은 다음 단계에서 구현됩니다!');
+}
+
+async function deleteEvent() {
+  if (!currentEditingEvent || !googleAccessToken) {
+    alert('일정을 삭제할 수 없습니다.');
+    return;
+  }
+
+  if (!confirm('정말 이 일정을 삭제하시겠습니까?')) {
+    return;
+  }
+
+  // 다음 단계에서 API 호출 구현
+  alert('삭제 기능은 다음 단계에서 구현됩니다!');
 }
 
 // 설정 패널
@@ -2504,8 +2720,13 @@ function renderMonthView() {
       eventDiv.style.backgroundColor = event.color;
       eventDiv.style.color = eventTextColor;
       eventDiv.style.fontSize = eventFontSize;
+      eventDiv.style.cursor = 'pointer';
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+
+      // 이벤트 클릭 시 모달 열기
+      eventDiv.onclick = () => openEventModal(event);
+
       cell.appendChild(eventDiv);
     });
     
@@ -2829,6 +3050,10 @@ function renderWeekView() {
           eventDiv.style.boxSizing = 'border-box';
           eventDiv.style.display = 'flex';
           eventDiv.style.flexDirection = 'column';
+          eventDiv.style.cursor = 'pointer';
+
+          // 이벤트 클릭 시 모달 열기
+          eventDiv.onclick = () => openEventModal(splitEvent);
 
           // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
           if (travelTimeSlots > 0) {
@@ -3064,6 +3289,10 @@ function renderDayView() {
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.display = 'flex';
         eventDiv.style.flexDirection = 'column';
+        eventDiv.style.cursor = 'pointer';
+
+        // 이벤트 클릭 시 모달 열기
+        eventDiv.onclick = () => openEventModal(splitEvent);
 
         // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
         if (travelTimeSlots > 0) {
