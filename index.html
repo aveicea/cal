@@ -2623,8 +2623,8 @@ function renderWeekView() {
             eventDiv.style.padding = '2px 6px';
           }
 
-          eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
-          eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+          eventDiv.style.alignItems = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+          eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
                   //추가
           eventDiv.style.wordWrap = 'break-word';
           eventDiv.style.wordBreak = 'break-word';
@@ -2934,8 +2934,8 @@ function renderDayView() {
           eventDiv.style.padding = '2px 6px';
         }
 
-        eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
-        eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+        eventDiv.style.alignItems = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+        eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
         //추가
         eventDiv.style.wordWrap = 'break-word';
