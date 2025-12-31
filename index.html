@@ -3141,6 +3141,9 @@ function getAllEventsForDate(date) {
   const day = String(date.getDate()).padStart(2, '0');
   const dateString = `${year}-${month}-${day}`;
 
+  // 디버그: 몇 개의 캘린더를 처리하는지 확인
+  let processedCalendars = 0;
+
   // 전날 날짜도 계산 (6시 넘어오는 이벤트 포함)
   const prevDate = new Date(date);
   prevDate.setDate(prevDate.getDate() - 1);
@@ -3152,6 +3155,13 @@ function getAllEventsForDate(date) {
   calendars.forEach(calendar => {
     if (!calendar.visible || !calendar.events) return;
     if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) return;
+
+    processedCalendars++;
+    if (processedCalendars === 1) {
+      addDebugLog(`[${dateString}] 캘린더 처리 시작: ${calendar.name} (ID: ${calendar.id})`);
+    } else {
+      addDebugLog(`[${dateString}] 경고: ${processedCalendars}번째 캘린더! ${calendar.name} (ID: ${calendar.id})`);
+    }
 
     // 당일 이벤트
     const events = calendar.events.filter(event => {
