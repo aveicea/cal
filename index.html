@@ -1466,6 +1466,13 @@ function updateGoogleSignInUI(isSignedIn) {
 function openEventModal(event) {
   currentEditingEvent = event;
 
+  // 디버그: 이벤트 정보 출력
+  addDebugLog(`이벤트 모달 열기: ${event.title}`);
+  addDebugLog(`- ID: ${event.id || '없음'}`);
+  addDebugLog(`- UID: ${event.uid || '없음'}`);
+  addDebugLog(`- 캘린더: ${event.calendarName || '없음'}`);
+  addDebugLog(`- 반복 ID: ${event.recurringEventId || '없음'}`);
+
   // 모달 필드 채우기
   document.getElementById('eventEditTitle').value = event.title || '';
   document.getElementById('eventEditDate').value = event.date || '';
@@ -1477,6 +1484,15 @@ function openEventModal(event) {
 
   // 읽기 전용 캘린더면 수정 불가
   const calendar = calendars.find(c => c.name === event.calendarName);
+
+  // 디버그: 캘린더 정보 출력
+  if (calendar) {
+    addDebugLog(`- 캘린더 타입: ${calendar.type}`);
+    addDebugLog(`- 캘린더 ID: ${calendar.calendarId || '없음'}`);
+  } else {
+    addDebugLog(`- 캘린더를 찾을 수 없음!`);
+  }
+
   const isEditable = calendar && calendar.type === 'api' && googleAccessToken;
 
   document.getElementById('eventEditTitle').disabled = !isEditable;
@@ -1523,10 +1539,28 @@ async function saveEventChanges() {
 
   // 캘린더 찾기
   const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
-  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
-    alert('이벤트 정보를 찾을 수 없습니다.');
+
+  if (!calendar) {
+    addDebugLog('에러: 캘린더를 찾을 수 없음');
+    alert(`이벤트 정보를 찾을 수 없습니다.\n캘린더: ${currentEditingEvent.calendarName}`);
     return;
   }
+
+  if (!calendar.calendarId) {
+    addDebugLog('에러: 캘린더 ID가 없음');
+    alert('캘린더 ID가 없습니다. API로 추가한 캘린더인지 확인해주세요.');
+    return;
+  }
+
+  // 이벤트 ID 확인 (id 또는 uid 사용)
+  const eventId = currentEditingEvent.id || currentEditingEvent.uid;
+  if (!eventId) {
+    addDebugLog('에러: 이벤트 ID가 없음');
+    alert('이벤트 ID를 찾을 수 없습니다.\n디버그 로그를 확인해주세요.');
+    return;
+  }
+
+  addDebugLog(`사용할 이벤트 ID: ${eventId}`);
 
   // 수정된 값 가져오기
   const updatedTitle = document.getElementById('eventEditTitle').value.trim();
@@ -1566,11 +1600,11 @@ async function saveEventChanges() {
       eventResource.description = updatedDescription;
     }
 
-    addDebugLog(`일정 수정 중: ${currentEditingEvent.id}`);
+    addDebugLog(`일정 수정 중: ${eventId}`);
 
     // Google Calendar API 호출
     const response = await gapi.client.request({
-      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${eventId}`,
       method: 'PATCH',
       body: eventResource,
       headers: {
@@ -1582,7 +1616,7 @@ async function saveEventChanges() {
     addDebugLog('일정 수정 성공!');
 
     // 로컬 이벤트 데이터 업데이트
-    const eventIndex = calendar.events.findIndex(e => e.id === currentEditingEvent.id);
+    const eventIndex = calendar.events.findIndex(e => (e.id || e.uid) === eventId);
     if (eventIndex >= 0) {
       calendar.events[eventIndex] = {
         ...calendar.events[eventIndex],
@@ -1621,17 +1655,33 @@ async function deleteEvent() {
 
   // 캘린더 찾기
   const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
-  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
-    alert('이벤트 정보를 찾을 수 없습니다.');
+
+  if (!calendar) {
+    addDebugLog('에러: 캘린더를 찾을 수 없음');
+    alert(`이벤트 정보를 찾을 수 없습니다.\n캘린더: ${currentEditingEvent.calendarName}`);
+    return;
+  }
+
+  if (!calendar.calendarId) {
+    addDebugLog('에러: 캘린더 ID가 없음');
+    alert('캘린더 ID가 없습니다. API로 추가한 캘린더인지 확인해주세요.');
+    return;
+  }
+
+  // 이벤트 ID 확인 (id 또는 uid 사용)
+  const eventId = currentEditingEvent.id || currentEditingEvent.uid;
+  if (!eventId) {
+    addDebugLog('에러: 이벤트 ID가 없음');
+    alert('이벤트 ID를 찾을 수 없습니다.\n디버그 로그를 확인해주세요.');
     return;
   }
 
   try {
-    addDebugLog(`일정 삭제 중: ${currentEditingEvent.id}`);
+    addDebugLog(`일정 삭제 중: ${eventId}`);
 
     // Google Calendar API 호출
     await gapi.client.request({
-      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${eventId}`,
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${googleAccessToken}`
@@ -1641,7 +1691,7 @@ async function deleteEvent() {
     addDebugLog('일정 삭제 성공!');
 
     // 로컬 이벤트 데이터에서 제거
-    calendar.events = calendar.events.filter(e => e.id !== currentEditingEvent.id);
+    calendar.events = calendar.events.filter(e => (e.id || e.uid) !== eventId);
 
     // 화면 업데이트
     renderCalendar();
