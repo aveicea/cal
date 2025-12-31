@@ -2461,8 +2461,14 @@ function splitCrossDayEvent(event) {
 
   // 둘째 날 부분 (6:00 ~ 종료시간)
   // 종료 시간이 6시 이전이면 둘째 날(다음 날)에 표시
+  // 다음 날 날짜 계산
+  const eventDate = new Date(event.date + 'T00:00:00');
+  eventDate.setDate(eventDate.getDate() + 1);
+  const nextDayDate = eventDate.toISOString().split('T')[0];
+
   events.push({
     ...event,
+    date: nextDayDate,  // 다음 날 날짜로 변경
     startTime: '06:00',
     title: event.title,
     isSecondPart: true,
@@ -2601,7 +2607,7 @@ function renderWeekView() {
       const splitEvents = splitCrossDayEvent(event);
 
       splitEvents.forEach((splitEvent) => {
-        if (splitEvent.isNextDay) return;
+        // isNextDay 이벤트도 표시 (이제 올바른 날짜를 가지고 있음)
 
         if (splitEvent.time === '종일') {
           // 종일 이벤트는 작은 배지로만 표시
@@ -2914,7 +2920,7 @@ function renderDayView() {
     const splitEvents = splitCrossDayEvent(event);
 
     splitEvents.forEach((splitEvent) => {
-      if (splitEvent.isNextDay) return;
+      // isNextDay 이벤트도 표시 (이제 올바른 날짜를 가지고 있음)
 
       if (splitEvent.time === '종일') {
         // 종일 이벤트는 작은 배지로만 표시
