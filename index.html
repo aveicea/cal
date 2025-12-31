@@ -2602,7 +2602,6 @@ function renderWeekView() {
           }
 
           eventDiv.style.color = eventTextColor;
-          eventDiv.style.padding = '2px 6px';
           eventDiv.style.fontSize = '0.6em';
           eventDiv.style.overflow = 'visible';
           eventDiv.style.textOverflow = 'clip';
@@ -2610,6 +2609,20 @@ function renderWeekView() {
           eventDiv.style.position = 'absolute';
           eventDiv.style.boxSizing = 'border-box';
           eventDiv.style.display = 'flex';
+          eventDiv.style.flexDirection = 'column';
+
+          // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
+          if (travelTimeSlots > 0) {
+            const totalHeight = clampedEndPosition - startPosition;
+            const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+            eventDiv.style.paddingTop = `${travelPercentage}%`;
+            eventDiv.style.paddingLeft = '6px';
+            eventDiv.style.paddingRight = '6px';
+            eventDiv.style.paddingBottom = '2px';
+          } else {
+            eventDiv.style.padding = '2px 6px';
+          }
+
           eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
           eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
                   //추가
@@ -2900,7 +2913,6 @@ function renderDayView() {
         }
 
         eventDiv.style.color = eventTextColor;
-        eventDiv.style.padding = '2px 6px';
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.overflow = 'visible';
         eventDiv.style.textOverflow = 'clip';
@@ -2908,6 +2920,20 @@ function renderDayView() {
         eventDiv.style.position = 'absolute';
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.display = 'flex';
+        eventDiv.style.flexDirection = 'column';
+
+        // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
+        if (travelTimeSlots > 0) {
+          const totalHeight = clampedEndPosition - startPosition;
+          const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+          eventDiv.style.paddingTop = `${travelPercentage}%`;
+          eventDiv.style.paddingLeft = '6px';
+          eventDiv.style.paddingRight = '6px';
+          eventDiv.style.paddingBottom = '2px';
+        } else {
+          eventDiv.style.padding = '2px 6px';
+        }
+
         eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
         eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
