@@ -1501,7 +1501,18 @@ async function loadApiEvents(calendar) {
     
     const data = await response.json();
 
-    calendar.events = data.items.map(event => {
+    // 디버그: 첫 번째 이벤트 구조 확인
+    if (data.items && data.items.length > 0) {
+      const firstEvent = data.items[0];
+      addDebugLog(`첫 번째 이벤트 전체 구조: ${JSON.stringify(firstEvent, null, 2).substring(0, 500)}`);
+      addDebugLog(`이벤트 필드 목록: ${Object.keys(firstEvent).join(', ')}`);
+    }
+
+    calendar.events = data.items.map((event, index) => {
+      // 처음 3개 이벤트의 summary 로깅
+      if (index < 3) {
+        addDebugLog(`이벤트 ${index}: summary="${event.summary}", status="${event.status}"`);
+      }
       const startDate = event.start.dateTime || event.start.date;
       const endDate = event.end.dateTime || event.end.date;
       const startTime = new Date(startDate);
