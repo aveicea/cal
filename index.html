@@ -1414,34 +1414,88 @@ function handleOAuthCallback(response) {
 }
 
 function handleGoogleSignIn() {
-  // 클라이언트 ID 저장
+  // 클라이언트 ID 가져오기
   const clientId = document.getElementById('googleClientId').value.trim();
-  if (clientId !== googleClientId) {
-    if (!initGoogleOAuth()) {
-      return;
-    }
+
+  if (!clientId) {
+    alert('OAuth 클라이언트 ID를 입력해주세요.');
+    return;
   }
 
-  if (!googleTokenClient) {
-    if (!initGoogleOAuth()) {
-      return;
-    }
-  }
+  // 클라이언트 ID 저장
+  googleClientId = clientId;
+  saveToStorage();
 
-  // 인증 요청
-  googleTokenClient.requestAccessToken({ prompt: 'consent' });
+  // 리디렉션 방식 OAuth 사용 (노션 호환)
+  const redirectUri = window.location.origin + window.location.pathname;
+  const scope = encodeURIComponent(GOOGLE_SCOPES);
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=token&` +
+    `scope=${scope}&` +
+    `include_granted_scopes=true&` +
+    `prompt=consent`;
+
+  addDebugLog('리디렉션 방식으로 OAuth 시작');
+  addDebugLog(`리디렉션 URI: ${redirectUri}`);
+
+  // Google 로그인 페이지로 리디렉션
+  window.location.href = authUrl;
 }
 
 function handleGoogleSignOut() {
-  if (googleAccessToken) {
-    google.accounts.oauth2.revoke(googleAccessToken, () => {
-      addDebugLog('Google 인증 해제 완료');
-    });
-  }
-
   googleAccessToken = null;
   updateGoogleSignInUI(false);
+  saveToStorage();
+
+  // URL 해시 제거 (토큰 정보 제거)
+  if (window.location.hash) {
+    window.history.replaceState(null, null, window.location.pathname);
+  }
+
   alert('구글 계정 연결이 해제되었습니다.');
+  addDebugLog('Google 인증 해제 완료');
+}
+
+// URL에서 OAuth 토큰 확인 (리디렉션 후)
+function checkOAuthToken() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get('access_token');
+  const error = params.get('error');
+
+  if (error) {
+    addDebugLog(`OAuth 오류: ${error}`);
+    alert(`인증 실패: ${error}`);
+    window.history.replaceState(null, null, window.location.pathname);
+    return;
+  }
+
+  if (accessToken) {
+    googleAccessToken = accessToken;
+    addDebugLog('Google 인증 성공! (리디렉션)');
+    updateGoogleSignInUI(true);
+    saveToStorage();
+
+    // URL에서 토큰 제거
+    window.history.replaceState(null, null, window.location.pathname);
+
+    // gapi 초기화
+    if (typeof gapi !== 'undefined') {
+      gapi.client.init({}).then(() => {
+        return gapi.client.load('calendar', 'v3');
+      }).then(() => {
+        addDebugLog('Google Calendar API 로드 완료');
+        alert('구글 계정 연결 완료! 이제 일정을 수정할 수 있습니다.');
+      }).catch((error) => {
+        addDebugLog(`API 로드 실패: ${error.message}`);
+      });
+    }
+  }
 }
 
 function updateGoogleSignInUI(isSignedIn) {
@@ -4167,6 +4221,9 @@ if (typeof gapi !== 'undefined') {
     }
   });
 }
+
+// 페이지 로드 시 OAuth 토큰 확인 (리디렉션 후)
+checkOAuthToken();
 
 // 도움말 표시
 console.log('%c멀티 캘린더 뷰어 디버그 도구%c\n' +
