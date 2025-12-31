@@ -2742,84 +2742,6 @@ function renderWeekView() {
         applyRoundedCorners(slotEventDivs[slot]);
       }
     }
-    
-    // 다음날 새벽 이벤트 처리 (동일한 방식)
-    // 다음날 새벽 이벤트 처리
-    const nextDate = new Date(date);
-    nextDate.setDate(date.getDate() + 0);
-    const nextDayEvents = getAllEventsForDate(nextDate);
-
-    nextDayEvents.forEach((event) => {
-    // 0-6시 사이의 이벤트만 처리
-    const originalStartHour = getEventHour(event.startTime);
-    const originalEndHour = getEventHour(event.endTime);
-    
-    // 6시 이후 시작하는 이벤트는 스킵
-    if (originalStartHour >= SLOT_START_HOUR) return;
-
-      // **추가: 시작이 0~6시고, 끝도 0~6시인 이벤트는 이미 그려졌으니 중복 방지**
-    if (originalEndHour < SLOT_START_HOUR) return;
-    
-    // 0-6시 사이 이벤트를 현재 날짜(어제) 그리드에 표시
-    const startMinute = getEventMinute(event.startTime);
-    const endMinute = getEventMinute(event.endTime);
-    
-    const startPosition = getExactSlotPosition(originalStartHour, startMinute);
-    let endPosition = getExactSlotPosition(originalEndHour, endMinute);
-    
-    // 6시 넘어가면 24(슬롯 끝)로 제한
-    if (originalEndHour >= SLOT_START_HOUR) {
-      endPosition = 24;
-    }
-    
-    const startSlot = Math.floor(startPosition);
-    
-    const currentEventIndex = eventCounts[startSlot] || 0;
-    eventCounts[startSlot] = (eventCounts[startSlot] || 0) + 1;
-    
-    const eventDiv = document.createElement('div');
-    eventDiv.className = 'time-event';
-    eventDiv.style.backgroundColor = event.color;
-    eventDiv.style.color = eventTextColor;
-    eventDiv.style.padding = '2px 6px';
-    eventDiv.style.fontSize = '0.6em';
-    eventDiv.style.overflow = 'visible';
-    eventDiv.style.textOverflow = 'clip';
-    eventDiv.style.whiteSpace = 'normal';
-    eventDiv.style.position = 'absolute';
-    eventDiv.style.boxSizing = 'border-box';
-    eventDiv.style.display = 'flex';
-    eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
-    eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
-    eventDiv.style.zIndex = 100 + currentEventIndex;
-    eventDiv.style.wordWrap = 'break-word';
-    eventDiv.style.wordBreak = 'break-word';
-    eventDiv.style.lineHeight = '1.2';
-    eventDiv.style.minHeight = '20px';
-    
-    const cellHeight = 25;
-    const topOffset = (startPosition - startSlot) * cellHeight;
-    const height = (endPosition - startPosition) * cellHeight;
-    
-    eventDiv.style.top = `${topOffset}px`;
-    eventDiv.style.height = `${Math.max(height, 20)}px`;
-    
-    const totalEvents = Math.max(eventCounts[startSlot], 1);
-    const eventWidth = Math.floor(100 / totalEvents);
-    const leftPosition = currentEventIndex * eventWidth;
-    
-    eventDiv.style.left = `${leftPosition}%`;
-    eventDiv.style.width = `${eventWidth}%`;
-    
-    eventDiv.textContent = event.title;
-    eventDiv.title = `${event.title}\n시간: ${event.startTime} - ${event.endTime}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
-    
-    if (dayCells[day][startSlot]) {
-      dayCells[day][startSlot].appendChild(eventDiv);
-      if (!slotEventDivs[startSlot]) slotEventDivs[startSlot] = [];
-      slotEventDivs[startSlot].push(eventDiv);
-    }
-    });
   }
 
   container.appendChild(grid);
@@ -3141,9 +3063,6 @@ function getAllEventsForDate(date) {
   const day = String(date.getDate()).padStart(2, '0');
   const dateString = `${year}-${month}-${day}`;
 
-  // 디버그: 몇 개의 캘린더를 처리하는지 확인
-  let processedCalendars = 0;
-
   // 전날 날짜도 계산 (6시 넘어오는 이벤트 포함)
   const prevDate = new Date(date);
   prevDate.setDate(prevDate.getDate() - 1);
@@ -3155,13 +3074,6 @@ function getAllEventsForDate(date) {
   calendars.forEach(calendar => {
     if (!calendar.visible || !calendar.events) return;
     if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) return;
-
-    processedCalendars++;
-    if (processedCalendars === 1) {
-      addDebugLog(`[${dateString}] 캘린더 처리 시작: ${calendar.name} (ID: ${calendar.id})`);
-    } else {
-      addDebugLog(`[${dateString}] 경고: ${processedCalendars}번째 캘린더! ${calendar.name} (ID: ${calendar.id})`);
-    }
 
     // 당일 이벤트
     const events = calendar.events.filter(event => {
@@ -3184,10 +3096,6 @@ function getAllEventsForDate(date) {
       return startPosition >= endPosition; // 6시 넘어가면 true
     });
 
-    if (prevEvents.length > 0) {
-      addDebugLog(`[${dateString}] 전날에서 넘어오는 이벤트 ${prevEvents.length}개 발견`);
-    }
-
     // 전날 이벤트를 분할해서 다음날 부분만 추가
     prevEvents.forEach(event => {
       const splitEvents = splitCrossDayEvent({
@@ -3196,15 +3104,12 @@ function getAllEventsForDate(date) {
         calendarName: calendar.name
       });
 
-      addDebugLog(`  "${event.title}" 분할 결과: ${splitEvents.length}개 (${splitEvents.map(e => e.date).join(', ')})`);
-
       // isNextDay 부분만 추가 (날짜가 dateString과 일치하는 것)
       splitEvents.forEach(splitEvent => {
         if (splitEvent.date === dateString) {
           const eventKey = `${event.uid || event.id}_${splitEvent.date}_${splitEvent.startTime}`;
           if (!seenEvents.has(eventKey)) {
             seenEvents.set(eventKey, true);
-            addDebugLog(`    추가: ${splitEvent.title} (${splitEvent.startTime}~${splitEvent.endTime})`);
             allEvents.push(splitEvent);
           }
         }
