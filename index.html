@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>멀티 캘린더 뷰어</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -862,6 +864,34 @@
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-title">멀티 캘린더 설정</div>
 
+<!-- 구글 캘린더 OAuth 연동 -->
+<div class="oauth-section">
+  <div class="toggle-header" onclick="toggleSection('oauthContent', 'oauthToggleIcon')">
+    <div class="color-picker-title">구글 캘린더 연동 (수정 기능)</div>
+    <div class="toggle-icon" id="oauthToggleIcon">▼</div>
+  </div>
+  <div class="toggle-content" id="oauthContent">
+    <div class="input-group">
+      <label>OAuth 클라이언트 ID</label>
+      <input type="text" id="googleClientId" placeholder="구글 클라우드 콘솔에서 생성한 클라이언트 ID">
+      <div class="help-text">
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>에서 OAuth 2.0 클라이언트 ID를 생성하세요.
+      </div>
+    </div>
+    <div class="input-group">
+      <div id="googleSignInStatus" style="margin-bottom: 10px; color: #666; font-size: 12px;">
+        연결 안 됨
+      </div>
+      <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()">
+        구글 계정 연결
+      </button>
+      <button id="googleSignOutBtn" class="btn btn-secondary" onclick="handleGoogleSignOut()" style="display: none; margin-left: 8px;">
+        연결 해제
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- 뷰별 캘린더 선택 -->
 <div class="view-calendar-section">
   <div class="toggle-header" onclick="toggleSection('viewCalendarSettings', 'viewToggleIcon')">
@@ -1092,6 +1122,12 @@ let viewCalendarSettings = {
   month: []   // 월간뷰에서 보일 캘린더 ID 배열
 };
 
+// Google OAuth 설정
+let googleClientId = '';
+let googleAccessToken = null;
+let googleTokenClient = null;
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar';
+
 // 텍스트 정렬 설정
 let textAlignHorizontal = 'center'; // 'left' or 'center'
 let textAlignVertical = 'center';   // 'top' or 'center'
@@ -1190,6 +1226,101 @@ function init() {
       }
     }
   }, 120000); // 2분마다 체크
+}
+
+// Google OAuth 관련 함수들
+function initGoogleOAuth() {
+  googleClientId = document.getElementById('googleClientId').value.trim();
+
+  if (!googleClientId) {
+    alert('OAuth 클라이언트 ID를 입력해주세요.');
+    return false;
+  }
+
+  // Google API 초기화
+  if (typeof google !== 'undefined' && google.accounts) {
+    googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId,
+      scope: GOOGLE_SCOPES,
+      callback: handleOAuthCallback
+    });
+    addDebugLog('Google OAuth 초기화 완료');
+    return true;
+  } else {
+    addDebugLog('Google API가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.');
+    return false;
+  }
+}
+
+function handleOAuthCallback(response) {
+  if (response.error) {
+    addDebugLog(`OAuth 오류: ${response.error}`);
+    alert(`인증 실패: ${response.error}`);
+    return;
+  }
+
+  googleAccessToken = response.access_token;
+  addDebugLog('Google 인증 성공!');
+  updateGoogleSignInUI(true);
+
+  // gapi 초기화
+  gapi.client.init({}).then(() => {
+    return gapi.client.load('calendar', 'v3');
+  }).then(() => {
+    addDebugLog('Google Calendar API 로드 완료');
+    alert('구글 계정 연결 완료! 이제 일정을 수정할 수 있습니다.');
+  }).catch((error) => {
+    addDebugLog(`API 로드 실패: ${error.message}`);
+  });
+}
+
+function handleGoogleSignIn() {
+  // 클라이언트 ID 저장
+  const clientId = document.getElementById('googleClientId').value.trim();
+  if (clientId !== googleClientId) {
+    if (!initGoogleOAuth()) {
+      return;
+    }
+  }
+
+  if (!googleTokenClient) {
+    if (!initGoogleOAuth()) {
+      return;
+    }
+  }
+
+  // 인증 요청
+  googleTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function handleGoogleSignOut() {
+  if (googleAccessToken) {
+    google.accounts.oauth2.revoke(googleAccessToken, () => {
+      addDebugLog('Google 인증 해제 완료');
+    });
+  }
+
+  googleAccessToken = null;
+  updateGoogleSignInUI(false);
+  alert('구글 계정 연결이 해제되었습니다.');
+}
+
+function updateGoogleSignInUI(isSignedIn) {
+  const signInBtn = document.getElementById('googleSignInBtn');
+  const signOutBtn = document.getElementById('googleSignOutBtn');
+  const statusDiv = document.getElementById('googleSignInStatus');
+
+  if (isSignedIn) {
+    signInBtn.style.display = 'none';
+    signOutBtn.style.display = 'inline-block';
+    statusDiv.textContent = '✅ 연결됨 - 일정 수정 가능';
+    statusDiv.style.color = '#0f9d58';
+  } else {
+    signInBtn.style.display = 'inline-block';
+    signOutBtn.style.display = 'none';
+    statusDiv.textContent = '연결 안 됨';
+    statusDiv.style.color = '#666';
+  }
 }
 
 // 설정 패널
@@ -3297,6 +3428,7 @@ function saveToStorage() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      googleClientId: googleClientId,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3333,6 +3465,7 @@ function exportCalendarSettings() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      googleClientId: googleClientId,
       calendars: calendars.map(cal => ({
         id: cal.id,
         name: cal.name,
@@ -3487,6 +3620,7 @@ function loadFromStorage() {
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
       eventFontSize = parsed.eventFontSize || '0.6em';
+      googleClientId = parsed.googleClientId || '';
       calendars = parsed.calendars || [];
 
       // UI 복원
@@ -3494,6 +3628,9 @@ function loadFromStorage() {
       document.getElementById('textAlignVertical').value = textAlignVertical;
       document.getElementById('eventTextColor').value = eventTextColor;
       document.getElementById('eventFontSize').value = eventFontSize;
+      if (googleClientId) {
+        document.getElementById('googleClientId').value = googleClientId;
+      }
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
@@ -3612,7 +3749,25 @@ window.debugCalendar = {
   addKoreanHolidays: addKoreanHolidays,
   addSampleCalendar: addSampleCalendar
 };
-  
+
+// Google API 초기화
+function gapiLoaded() {
+  gapi.load('client', () => {
+    addDebugLog('Google API 클라이언트 로드 완료');
+  });
+}
+
+// gapi가 로드되면 초기화
+if (typeof gapi !== 'undefined') {
+  gapiLoaded();
+} else {
+  // gapi가 아직 로드 안 됐으면 대기
+  window.addEventListener('load', () => {
+    if (typeof gapi !== 'undefined') {
+      setTimeout(gapiLoaded, 1000);
+    }
+  });
+}
 
 // 도움말 표시
 console.log('%c멀티 캘린더 뷰어 디버그 도구%c\n' +
