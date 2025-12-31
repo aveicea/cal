@@ -1504,8 +1504,23 @@ async function loadApiEvents(calendar) {
     // 디버그: 첫 번째 이벤트 구조 확인
     if (data.items && data.items.length > 0) {
       const firstEvent = data.items[0];
-      addDebugLog(`첫 번째 이벤트 전체 구조: ${JSON.stringify(firstEvent, null, 2).substring(0, 500)}`);
+      addDebugLog(`첫 번째 이벤트 전체 구조: ${JSON.stringify(firstEvent, null, 2).substring(0, 1000)}`);
       addDebugLog(`이벤트 필드 목록: ${Object.keys(firstEvent).join(', ')}`);
+
+      // 모든 이벤트에서 gadget이나 extendedProperties가 있는지 확인
+      let hasGadget = false;
+      let hasExtended = false;
+      data.items.forEach((evt, idx) => {
+        if (evt.gadget) {
+          hasGadget = true;
+          addDebugLog(`이벤트 ${idx}에 gadget 발견: ${JSON.stringify(evt.gadget)}`);
+        }
+        if (evt.extendedProperties) {
+          hasExtended = true;
+          addDebugLog(`이벤트 ${idx}에 extendedProperties 발견: ${JSON.stringify(evt.extendedProperties)}`);
+        }
+      });
+      addDebugLog(`전체 ${data.items.length}개 이벤트 중 gadget: ${hasGadget}, extendedProperties: ${hasExtended}`);
     }
 
     calendar.events = data.items.map((event, index) => {
