@@ -1349,24 +1349,30 @@ function clearDebugLog() {
 // 초기화
 function init() {
   loadFromStorage();
-  
+
+  // 모달 강제로 숨기기 (페이지 로드 시 자동으로 뜨는 문제 방지)
+  const eventModal = document.getElementById('eventModal');
+  const eventModalOverlay = document.getElementById('eventModalOverlay');
+  if (eventModal) eventModal.style.display = 'none';
+  if (eventModalOverlay) eventModalOverlay.style.display = 'none';
+
   // 노션에서는 저장된 날짜 무시하고 항상 오늘 사용
   const isNotion = window.location !== window.parent.location;
   if (isNotion) {
     currentDate = new Date();
     const hour = currentDate.getHours();
-    
+
     if (hour < 6) {
       currentDate.setDate(currentDate.getDate() - 1);
     }
-    
+
     addDebugLog('노션 환경: 오늘 날짜로 리셋');
   } else {
     // 노션이 아닐 때만 저장된 날짜 확인
     if (!currentDate || isNaN(currentDate.getTime())) {
       currentDate = new Date();
       const hour = currentDate.getHours();
-      
+
       if (hour < 6) {
         currentDate.setDate(currentDate.getDate() - 1);
       }
