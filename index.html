@@ -1496,31 +1496,55 @@ async function loadApiEvents(calendar) {
     }
     
     const data = await response.json();
-    
+
     calendar.events = data.items.map(event => {
       const startDate = event.start.dateTime || event.start.date;
       const endDate = event.end.dateTime || event.end.date;
       const startTime = new Date(startDate);
       const endTime = new Date(endDate);
-      
+
+      // 이동시간 파싱 시도 (Google Calendar API에서는 여러 필드에 있을 수 있음)
+      let travelTime = 0;
+
+      // 방법 1: extendedProperties 확인
+      if (event.extendedProperties?.private?.travelTime) {
+        travelTime = parseInt(event.extendedProperties.private.travelTime);
+        addDebugLog(`이동시간 발견 (extendedProperties): ${travelTime}초`);
+      }
+
+      // 방법 2: gadget 데이터 확인 (구글이 travel time을 저장하는 방식)
+      if (event.gadget?.preferences?.travelTime) {
+        travelTime = parseInt(event.gadget.preferences.travelTime);
+        addDebugLog(`이동시간 발견 (gadget): ${travelTime}초`);
+      }
+
+      // 디버그: 이벤트에 이동시간 관련 필드가 있는지 확인
+      if (event.summary && (event.gadget || event.extendedProperties)) {
+        addDebugLog(`이벤트 "${event.summary}" 추가 데이터: ${JSON.stringify({
+          gadget: event.gadget ? 'exists' : 'none',
+          extendedProperties: event.extendedProperties ? 'exists' : 'none'
+        })}`);
+      }
+
       return {
         title: event.summary || '제목 없음',
         date: startTime.toISOString().split('T')[0],
-        startTime: event.start.dateTime ? 
+        startTime: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
-        endTime: event.end.dateTime ? 
+        endTime: event.end.dateTime ?
           endTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
-        time: event.start.dateTime ? 
+        time: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
         color: calendar.color,
         description: event.description || '',
-        location: event.location || ''  // 위치 정보 추가
+        location: event.location || '',
+        travelTime: travelTime
       };
     });
-    
+
     addDebugLog(`API 캘린더 로드 완료: ${calendar.events.length}개 이벤트`);
     
   } catch (error) {
