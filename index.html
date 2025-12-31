@@ -1521,8 +1521,92 @@ async function saveEventChanges() {
     return;
   }
 
-  // 다음 단계에서 API 호출 구현
-  alert('저장 기능은 다음 단계에서 구현됩니다!');
+  // 캘린더 찾기
+  const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
+  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
+    alert('이벤트 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  // 수정된 값 가져오기
+  const updatedTitle = document.getElementById('eventEditTitle').value.trim();
+  const updatedDate = document.getElementById('eventEditDate').value;
+  const updatedStartTime = document.getElementById('eventEditStartTime').value;
+  const updatedEndTime = document.getElementById('eventEditEndTime').value;
+  const updatedLocation = document.getElementById('eventEditLocation').value.trim();
+  const updatedDescription = document.getElementById('eventEditDescription').value.trim();
+
+  if (!updatedTitle) {
+    alert('제목을 입력해주세요.');
+    return;
+  }
+
+  try {
+    // Google Calendar API 형식으로 날짜/시간 변환
+    const startDateTime = `${updatedDate}T${updatedStartTime}:00`;
+    const endDateTime = `${updatedDate}T${updatedEndTime}:00`;
+
+    // API 요청 본문
+    const eventResource = {
+      summary: updatedTitle,
+      start: {
+        dateTime: startDateTime,
+        timeZone: 'Asia/Seoul'
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: 'Asia/Seoul'
+      }
+    };
+
+    if (updatedLocation) {
+      eventResource.location = updatedLocation;
+    }
+    if (updatedDescription) {
+      eventResource.description = updatedDescription;
+    }
+
+    addDebugLog(`일정 수정 중: ${currentEditingEvent.id}`);
+
+    // Google Calendar API 호출
+    const response = await gapi.client.request({
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      method: 'PATCH',
+      body: eventResource,
+      headers: {
+        'Authorization': `Bearer ${googleAccessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    addDebugLog('일정 수정 성공!');
+
+    // 로컬 이벤트 데이터 업데이트
+    const eventIndex = calendar.events.findIndex(e => e.id === currentEditingEvent.id);
+    if (eventIndex >= 0) {
+      calendar.events[eventIndex] = {
+        ...calendar.events[eventIndex],
+        title: updatedTitle,
+        date: updatedDate,
+        startTime: updatedStartTime,
+        endTime: updatedEndTime,
+        time: `${updatedStartTime} - ${updatedEndTime}`,
+        location: updatedLocation,
+        description: updatedDescription
+      };
+    }
+
+    // 화면 업데이트
+    renderCalendar();
+    saveToStorage();
+    closeEventModal();
+    alert('일정이 수정되었습니다!');
+
+  } catch (error) {
+    addDebugLog(`일정 수정 실패: ${error.message}`);
+    console.error('Error updating event:', error);
+    alert(`일정 수정 실패: ${error.message || '알 수 없는 오류'}`);
+  }
 }
 
 async function deleteEvent() {
@@ -1535,8 +1619,41 @@ async function deleteEvent() {
     return;
   }
 
-  // 다음 단계에서 API 호출 구현
-  alert('삭제 기능은 다음 단계에서 구현됩니다!');
+  // 캘린더 찾기
+  const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
+  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
+    alert('이벤트 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  try {
+    addDebugLog(`일정 삭제 중: ${currentEditingEvent.id}`);
+
+    // Google Calendar API 호출
+    await gapi.client.request({
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${googleAccessToken}`
+      }
+    });
+
+    addDebugLog('일정 삭제 성공!');
+
+    // 로컬 이벤트 데이터에서 제거
+    calendar.events = calendar.events.filter(e => e.id !== currentEditingEvent.id);
+
+    // 화면 업데이트
+    renderCalendar();
+    saveToStorage();
+    closeEventModal();
+    alert('일정이 삭제되었습니다!');
+
+  } catch (error) {
+    addDebugLog(`일정 삭제 실패: ${error.message}`);
+    console.error('Error deleting event:', error);
+    alert(`일정 삭제 실패: ${error.message || '알 수 없는 오류'}`);
+  }
 }
 
 // 설정 패널
