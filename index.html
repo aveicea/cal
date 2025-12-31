@@ -1270,6 +1270,15 @@ function darkenColor(hex, percent) {
     (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
 }
 
+function lightenColor(hex, percent) {
+  const num = parseInt(hex.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.min(255, (num >> 16) + amt);
+  const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+  const B = Math.min(255, (num & 0x0000FF) + amt);
+  return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
 function setAccentColor(color) {
   accentColor = color;
   accentHoverColor = darkenColor(color, 15);
@@ -1527,22 +1536,26 @@ async function loadNotionEvents(calendar) {
   const dateProperty = calendar.notionDateProperty;
   const titleProperty = calendar.notionTitleProperty;
 
+  // Vercel 프록시 서버 URL (배포 후 여기를 실제 URL로 변경)
+  const proxyUrl = 'https://cal-deh84wykk-aveiceas-projects.vercel.app/api/notion';
+
   try {
-    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+    addDebugLog(`Notion API 호출 시작`);
+
+    const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        page_size: 100
+        apiKey: apiKey,
+        databaseId: databaseId
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Notion API 오류 ${response.status}: ${errorData.message || response.statusText}`);
+      throw new Error(`프록시 오류 ${response.status}: ${errorData.error || errorData.message || response.statusText}`);
     }
 
     const data = await response.json();
@@ -1635,6 +1648,7 @@ function parseIcalData(icalText) {
           endTime: currentEvent.endTime || currentEvent.time || '종일',
           description: currentEvent.description || '',
           location: currentEvent.location || '',
+          travelTime: currentEvent.travelTime || 0,
           exdate: currentEvent.exdate || [],
           rrule: currentEvent.rrule,
           recurrenceId: currentEvent.recurrenceId,
@@ -1719,6 +1733,16 @@ function parseIcalData(icalText) {
             break;
           case 'LOCATION':
             currentEvent.location = decodeIcalText(value);
+            break;
+          case 'X-GOOGLE-TRAVEL-TIME':
+            // Google Calendar travel time in seconds
+            currentEvent.travelTime = parseInt(value);
+            addDebugLog(`이동시간 파싱: ${parseInt(value)}초`);
+            break;
+          case 'X-GOOGLE-TRAVEL-DURATION':
+            // Alternative property name
+            currentEvent.travelTime = parseInt(value);
+            addDebugLog(`이동시간 파싱 (대체): ${parseInt(value)}초`);
             break;
         }
       }
@@ -2543,9 +2567,19 @@ function renderWeekView() {
           const startMinute = getEventMinute(splitEvent.startTime);
           const endMinute = getEventMinute(splitEvent.endTime);
 
-          const startPosition = getExactSlotPosition(startHour, startMinute);
+          let startPosition = getExactSlotPosition(startHour, startMinute);
           const endPosition = getExactSlotPosition(endHour, endMinute);
-          
+
+          // 이동시간 계산 (초 → 슬롯 위치)
+          const travelTimeMinutes = event.travelTime ? event.travelTime / 60 : 0;
+          const travelTimeSlots = travelTimeMinutes / 60; // 1시간 = 1슬롯
+          const actualStartPosition = startPosition; // 실제 일정 시작
+
+          // 이동시간이 있으면 블록을 위로 확장
+          if (travelTimeSlots > 0) {
+            startPosition = Math.max(0, startPosition - travelTimeSlots);
+          }
+
           // 그리드 범위 제한
           const clampedEndPosition = Math.min(endPosition, SLOT_COUNT);
           const startSlot = Math.floor(startPosition);
@@ -2556,9 +2590,18 @@ function renderWeekView() {
 
           const eventDiv = document.createElement('div');
           eventDiv.className = 'time-event';
-          eventDiv.style.backgroundColor = event.color;
+
+          // 이동시간이 있으면 gradient 배경 적용
+          if (travelTimeSlots > 0) {
+            const totalHeight = clampedEndPosition - startPosition;
+            const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+            const lighterColor = lightenColor(event.color, 40); // 40% 밝게
+            eventDiv.style.background = `linear-gradient(to bottom, ${lighterColor} 0%, ${lighterColor} ${travelPercentage}%, ${event.color} ${travelPercentage}%, ${event.color} 100%)`;
+          } else {
+            eventDiv.style.backgroundColor = event.color;
+          }
+
           eventDiv.style.color = eventTextColor;
-          eventDiv.style.padding = '2px 6px';
           eventDiv.style.fontSize = '0.6em';
           eventDiv.style.overflow = 'visible';
           eventDiv.style.textOverflow = 'clip';
@@ -2566,6 +2609,20 @@ function renderWeekView() {
           eventDiv.style.position = 'absolute';
           eventDiv.style.boxSizing = 'border-box';
           eventDiv.style.display = 'flex';
+          eventDiv.style.flexDirection = 'column';
+
+          // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
+          if (travelTimeSlots > 0) {
+            const totalHeight = clampedEndPosition - startPosition;
+            const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+            eventDiv.style.paddingTop = `${travelPercentage}%`;
+            eventDiv.style.paddingLeft = '6px';
+            eventDiv.style.paddingRight = '6px';
+            eventDiv.style.paddingBottom = '2px';
+          } else {
+            eventDiv.style.padding = '2px 6px';
+          }
+
           eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
           eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
                   //추가
@@ -2823,20 +2880,39 @@ function renderDayView() {
         const startMinute = getEventMinute(splitEvent.startTime);
         const endMinute = getEventMinute(splitEvent.endTime);
 
-        const startPosition = getExactSlotPosition(startHour, startMinute);
+        let startPosition = getExactSlotPosition(startHour, startMinute);
         const endPosition = getExactSlotPosition(endHour, endMinute);
-        
+
+        // 이동시간 계산 (초 → 슬롯 위치)
+        const travelTimeMinutes = event.travelTime ? event.travelTime / 60 : 0;
+        const travelTimeSlots = travelTimeMinutes / 60; // 1시간 = 1슬롯
+        const actualStartPosition = startPosition; // 실제 일정 시작
+
+        // 이동시간이 있으면 블록을 위로 확장
+        if (travelTimeSlots > 0) {
+          startPosition = Math.max(0, startPosition - travelTimeSlots);
+        }
+
         const clampedEndPosition = Math.min(endPosition, SLOT_COUNT);
         const startSlot = Math.floor(startPosition);
-        
+
         const currentEventIndex = eventCounts[startSlot];
         eventCounts[startSlot]++;
 
         const eventDiv = document.createElement('div');
         eventDiv.className = 'time-event';
-        eventDiv.style.backgroundColor = event.color;
+
+        // 이동시간이 있으면 gradient 배경 적용
+        if (travelTimeSlots > 0) {
+          const totalHeight = clampedEndPosition - startPosition;
+          const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+          const lighterColor = lightenColor(event.color, 40); // 40% 밝게
+          eventDiv.style.background = `linear-gradient(to bottom, ${lighterColor} 0%, ${lighterColor} ${travelPercentage}%, ${event.color} ${travelPercentage}%, ${event.color} 100%)`;
+        } else {
+          eventDiv.style.backgroundColor = event.color;
+        }
+
         eventDiv.style.color = eventTextColor;
-        eventDiv.style.padding = '2px 6px';
         eventDiv.style.fontSize = '0.6em';
         eventDiv.style.overflow = 'visible';
         eventDiv.style.textOverflow = 'clip';
@@ -2844,6 +2920,20 @@ function renderDayView() {
         eventDiv.style.position = 'absolute';
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.display = 'flex';
+        eventDiv.style.flexDirection = 'column';
+
+        // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
+        if (travelTimeSlots > 0) {
+          const totalHeight = clampedEndPosition - startPosition;
+          const travelPercentage = (travelTimeSlots / totalHeight) * 100;
+          eventDiv.style.paddingTop = `${travelPercentage}%`;
+          eventDiv.style.paddingLeft = '6px';
+          eventDiv.style.paddingRight = '6px';
+          eventDiv.style.paddingBottom = '2px';
+        } else {
+          eventDiv.style.padding = '2px 6px';
+        }
+
         eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
         eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
