@@ -1482,11 +1482,15 @@ async function loadGooglePublicEvents(calendar) {
 
 // API 이벤트 로드
 async function loadApiEvents(calendar) {
-  const timeMin = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString();
-  const timeMax = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0).toISOString();
-  
-  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.calendarId)}/events?key=${calendar.apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`;
-  
+  // 넓은 범위로 변경 (iCal과 동일하게 3년 전후)
+  const now = new Date();
+  const timeMin = new Date(now.getFullYear() - 3, 0, 1).toISOString();
+  const timeMax = new Date(now.getFullYear() + 3, 11, 31).toISOString();
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.calendarId)}/events?key=${calendar.apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true&maxResults=2500`;
+
+  addDebugLog(`API 호출 범위: ${timeMin.split('T')[0]} ~ ${timeMax.split('T')[0]}`);
+
   try {
     const response = await fetch(url);
     
