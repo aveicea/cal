@@ -2433,7 +2433,12 @@ function applyRoundedCorners(eventsInSlot) {
 // 이벤트가 이틀에 걸치는지 확인하고 분할
 function splitCrossDayEvent(event) {
   if (event.time === '종일') return [event];
-  
+
+  // 이미 분할된 이벤트는 다시 분할하지 않음
+  if (event.isFirstPart || event.isSecondPart || event.isNextDay) {
+    return [event];
+  }
+
   const startHour = getEventHour(event.startTime);
   const endHour = getEventHour(event.endTime);
   const startMinute = getEventMinute(event.startTime);
