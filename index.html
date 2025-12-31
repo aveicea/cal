@@ -2462,9 +2462,13 @@ function splitCrossDayEvent(event) {
   // 둘째 날 부분 (6:00 ~ 종료시간)
   // 종료 시간이 6시 이전이면 둘째 날(다음 날)에 표시
   // 다음 날 날짜 계산
-  const eventDate = new Date(event.date + 'T00:00:00');
+  const [year, month, day] = event.date.split('-').map(Number);
+  const eventDate = new Date(year, month - 1, day);
   eventDate.setDate(eventDate.getDate() + 1);
-  const nextDayDate = eventDate.toISOString().split('T')[0];
+  const nextYear = eventDate.getFullYear();
+  const nextMonth = String(eventDate.getMonth() + 1).padStart(2, '0');
+  const nextDay = String(eventDate.getDate()).padStart(2, '0');
+  const nextDayDate = `${nextYear}-${nextMonth}-${nextDay}`;
 
   events.push({
     ...event,
