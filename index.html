@@ -1678,7 +1678,12 @@ function parseIcalData(icalText) {
       if (colonIndex > 0) {
         const key = line.substring(0, colonIndex).split(';')[0];
         const value = line.substring(colonIndex + 1);
-        
+
+        // 모든 X-GOOGLE 필드 로깅
+        if (key.startsWith('X-GOOGLE')) {
+          addDebugLog(`iCal 필드 발견: ${key} = ${value.substring(0, 100)}`);
+        }
+
         switch (key) {
           case 'UID':
             currentEvent.uid = value;
@@ -2623,8 +2628,8 @@ function renderWeekView() {
             eventDiv.style.padding = '2px 6px';
           }
 
-          eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
-          eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+          eventDiv.style.alignItems = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+          eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
                   //추가
           eventDiv.style.wordWrap = 'break-word';
           eventDiv.style.wordBreak = 'break-word';
@@ -2934,8 +2939,8 @@ function renderDayView() {
           eventDiv.style.padding = '2px 6px';
         }
 
-        eventDiv.style.alignItems = textAlignVertical === 'top' ? 'flex-start' : 'center';
-        eventDiv.style.justifyContent = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+        eventDiv.style.alignItems = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
+        eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
         //추가
         eventDiv.style.wordWrap = 'break-word';
