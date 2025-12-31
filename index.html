@@ -2084,6 +2084,9 @@ async function loadApiEvents(calendar) {
       }
 
       return {
+        id: event.id,  // Google Calendar API의 이벤트 ID
+        uid: event.iCalUID,  // iCalendar UID (백업용)
+        recurringEventId: event.recurringEventId,  // 반복 일정 ID
         title: event.summary || '제목 없음',
         date: startTime.toISOString().split('T')[0],
         startTime: event.start.dateTime ?
