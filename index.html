@@ -1678,7 +1678,12 @@ function parseIcalData(icalText) {
       if (colonIndex > 0) {
         const key = line.substring(0, colonIndex).split(';')[0];
         const value = line.substring(colonIndex + 1);
-        
+
+        // 모든 X-GOOGLE 필드 로깅
+        if (key.startsWith('X-GOOGLE')) {
+          addDebugLog(`iCal 필드 발견: ${key} = ${value.substring(0, 100)}`);
+        }
+
         switch (key) {
           case 'UID':
             currentEvent.uid = value;
