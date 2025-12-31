@@ -969,7 +969,7 @@
         연결 안 됨
       </div>
       <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()">
-        구글 계정 연결
+        구글 계정 연결 (자동)
       </button>
       <button id="googleCompleteLoginBtn" class="btn btn-primary" onclick="manualCompleteLogin()" style="display: none; margin-left: 8px;">
         로그인 완료 (수동)
@@ -978,6 +978,26 @@
         연결 해제
       </button>
     </div>
+
+    <!-- 노션/임베디드 환경용 수동 토큰 입력 -->
+    <div class="input-group" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <span>수동 토큰 입력 (노션 앱용)</span>
+        <button onclick="toggleTokenHelp()" style="background: #e8f5e9; color: #2e7d32; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11px; cursor: pointer;">?</button>
+      </label>
+      <div id="tokenHelpText" style="display: none; margin: 8px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; font-size: 12px; line-height: 1.6;">
+        <strong>노션 앱에서 사용하는 방법:</strong><br>
+        1. <a href="#" onclick="openTokenGuide(); return false;" style="color: #1976d2;">여기를 클릭</a>하여 새 탭에서 토큰 받기<br>
+        2. 받은 토큰을 아래 입력창에 붙여넣기<br>
+        3. "토큰으로 연결" 버튼 클릭<br>
+        <em style="color: #666;">※ 토큰은 1시간 동안 유효하며, 만료되면 다시 받아야 합니다</em>
+      </div>
+      <textarea id="manualTokenInput" placeholder="여기에 access_token을 붙여넣으세요" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 11px; resize: vertical;"></textarea>
+      <button class="btn btn-primary" onclick="connectWithManualToken()" style="margin-top: 8px;">
+        토큰으로 연결
+      </button>
+    </div>
+
     <div id="oauthDebugStatus" style="margin-top: 10px; padding: 8px; background: #f5f5f5; border-radius: 4px; font-size: 11px; font-family: monospace; display: none;">
     </div>
   </div>
@@ -1592,6 +1612,105 @@ function manualCompleteLogin() {
     alert('URL에서 토큰을 찾을 수 없습니다. 다시 로그인을 시도해주세요.');
     addDebugLog('수동 토큰 추출 실패');
   }
+}
+
+// 토큰 도움말 토글
+function toggleTokenHelp() {
+  const helpText = document.getElementById('tokenHelpText');
+  if (helpText.style.display === 'none') {
+    helpText.style.display = 'block';
+  } else {
+    helpText.style.display = 'none';
+  }
+}
+
+// 토큰 가이드 페이지 열기
+function openTokenGuide() {
+  const clientId = document.getElementById('googleClientId').value.trim();
+
+  if (!clientId) {
+    alert('먼저 OAuth 클라이언트 ID를 입력해주세요.');
+    return;
+  }
+
+  // Google OAuth Playground 대신 직접 OAuth URL 생성
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=urn:ietf:wg:oauth:2.0:oob&` +
+    `response_type=token&` +
+    `scope=${encodeURIComponent(GOOGLE_SCOPES)}&` +
+    `include_granted_scopes=true`;
+
+  addDebugLog('토큰 가이드 페이지 열기');
+  addDebugLog(`OAuth URL: ${authUrl}`);
+
+  // 새 탭에서 열기
+  const newWindow = window.open(authUrl, '_blank');
+
+  if (!newWindow) {
+    // 팝업이 차단된 경우
+    alert('팝업이 차단되었습니다. 아래 URL을 복사해서 새 탭에서 열어주세요:\n\n' + authUrl);
+
+    // URL을 클립보드에 복사 시도
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(authUrl).then(() => {
+        console.log('URL이 클립보드에 복사되었습니다.');
+      }).catch(() => {
+        console.log('클립보드 복사 실패');
+      });
+    }
+  } else {
+    // 성공적으로 열린 경우 안내
+    setTimeout(() => {
+      alert('새 탭에서 Google 로그인을 완료하면 토큰이 표시됩니다.\n\n' +
+            '1. 로그인하고 권한 승인\n' +
+            '2. 표시되는 토큰 전체를 복사\n' +
+            '3. 여기로 돌아와서 "수동 토큰 입력" 창에 붙여넣기');
+    }, 500);
+  }
+}
+
+// 수동으로 입력한 토큰으로 연결
+function connectWithManualToken() {
+  const tokenInput = document.getElementById('manualTokenInput').value.trim();
+
+  if (!tokenInput) {
+    alert('토큰을 입력해주세요.');
+    return;
+  }
+
+  addDebugLog('=== 수동 토큰 입력으로 연결 시작 ===');
+  addDebugLog(`토큰 길이: ${tokenInput.length}`);
+
+  // 토큰이 "access_token=" 형태로 붙여넣어진 경우 처리
+  let accessToken = tokenInput;
+
+  // URL 파라미터 형태인지 확인
+  if (tokenInput.includes('access_token=')) {
+    try {
+      const params = new URLSearchParams(tokenInput.replace(/^#/, ''));
+      accessToken = params.get('access_token') || tokenInput;
+    } catch (e) {
+      // 파싱 실패 시 그냥 전체를 토큰으로 사용
+    }
+  }
+
+  // 앞뒤 공백 및 따옴표 제거
+  accessToken = accessToken.replace(/^["'\s]+|["'\s]+$/g, '');
+
+  if (accessToken.length < 20) {
+    alert('토큰이 너무 짧습니다. 올바른 access_token인지 확인해주세요.');
+    addDebugLog('토큰이 너무 짧음');
+    return;
+  }
+
+  addDebugLog(`정제된 토큰 길이: ${accessToken.length}`);
+
+  // 토큰 처리
+  processOAuthToken(accessToken);
+
+  // 입력창 비우기
+  document.getElementById('manualTokenInput').value = '';
 }
 
 function updateGoogleSignInUI(isSignedIn) {
