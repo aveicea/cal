@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>멀티 캘린더 뷰어</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -840,6 +842,92 @@
     background: rgba(0,0,0,0.1);
   }
 
+  /* 이벤트 모달 스타일 */
+  .event-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+  }
+
+  .event-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .event-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .event-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+
+  .modal-close-btn:hover {
+    background: #f0f0f0;
+  }
+
+  .event-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .event-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn-danger {
+    background: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #c82333;
+  }
+
 </style>
 </head>
 <body>
@@ -861,6 +949,34 @@
   
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-title">멀티 캘린더 설정</div>
+
+<!-- 구글 캘린더 OAuth 연동 -->
+<div class="oauth-section">
+  <div class="toggle-header" onclick="toggleSection('oauthContent', 'oauthToggleIcon')">
+    <div class="color-picker-title">구글 캘린더 연동 (수정 기능)</div>
+    <div class="toggle-icon" id="oauthToggleIcon">▼</div>
+  </div>
+  <div class="toggle-content" id="oauthContent">
+    <div class="input-group">
+      <label>OAuth 클라이언트 ID</label>
+      <input type="text" id="googleClientId" placeholder="구글 클라우드 콘솔에서 생성한 클라이언트 ID">
+      <div class="help-text">
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>에서 OAuth 2.0 클라이언트 ID를 생성하세요.
+      </div>
+    </div>
+    <div class="input-group">
+      <div id="googleSignInStatus" style="margin-bottom: 10px; color: #666; font-size: 12px;">
+        연결 안 됨
+      </div>
+      <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()">
+        구글 계정 연결
+      </button>
+      <button id="googleSignOutBtn" class="btn btn-secondary" onclick="handleGoogleSignOut()" style="display: none; margin-left: 8px;">
+        연결 해제
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- 뷰별 캘린더 선택 -->
 <div class="view-calendar-section">
@@ -1077,6 +1193,56 @@
   </div>
 </div>
 
+<!-- 이벤트 상세/수정 모달 -->
+<div class="event-modal-overlay" id="eventModalOverlay" onclick="closeEventModal()"></div>
+<div class="event-modal" id="eventModal">
+  <div class="event-modal-header">
+    <h3>일정 상세</h3>
+    <button class="modal-close-btn" onclick="closeEventModal()">×</button>
+  </div>
+  <div class="event-modal-body">
+    <div class="input-group">
+      <label>제목</label>
+      <input type="text" id="eventEditTitle" placeholder="일정 제목">
+    </div>
+    <div class="input-group">
+      <label>날짜</label>
+      <input type="date" id="eventEditDate">
+    </div>
+    <div class="input-group">
+      <label>시작 시간</label>
+      <input type="time" id="eventEditStartTime">
+    </div>
+    <div class="input-group">
+      <label>종료 시간</label>
+      <input type="time" id="eventEditEndTime">
+    </div>
+    <div class="input-group">
+      <label>위치</label>
+      <input type="text" id="eventEditLocation" placeholder="위치 (선택)">
+    </div>
+    <div class="input-group">
+      <label>설명</label>
+      <textarea id="eventEditDescription" rows="3" placeholder="설명 (선택)"></textarea>
+    </div>
+    <div class="input-group">
+      <label>캘린더</label>
+      <div id="eventEditCalendarInfo" style="color: #666; font-size: 13px;"></div>
+    </div>
+  </div>
+  <div class="event-modal-footer">
+    <button class="btn btn-danger" id="eventDeleteBtn" onclick="deleteEvent()" style="margin-right: auto;">
+      삭제
+    </button>
+    <button class="btn btn-secondary" onclick="closeEventModal()">
+      취소
+    </button>
+    <button class="btn btn-primary" onclick="saveEventChanges()">
+      저장
+    </button>
+  </div>
+</div>
+
 <script>
 // 전역 변수
 let currentView = 'day';
@@ -1091,6 +1257,15 @@ let viewCalendarSettings = {
   week: [],   // 주간뷰에서 보일 캘린더 ID 배열
   month: []   // 월간뷰에서 보일 캘린더 ID 배열
 };
+
+// Google OAuth 설정
+let googleClientId = '';
+let googleAccessToken = null;
+let googleTokenClient = null;
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar';
+
+// 현재 수정 중인 이벤트
+let currentEditingEvent = null;
 
 // 텍스트 정렬 설정
 let textAlignHorizontal = 'center'; // 'left' or 'center'
@@ -1190,6 +1365,295 @@ function init() {
       }
     }
   }, 120000); // 2분마다 체크
+}
+
+// Google OAuth 관련 함수들
+function initGoogleOAuth() {
+  googleClientId = document.getElementById('googleClientId').value.trim();
+
+  if (!googleClientId) {
+    alert('OAuth 클라이언트 ID를 입력해주세요.');
+    return false;
+  }
+
+  // Google API 초기화
+  if (typeof google !== 'undefined' && google.accounts) {
+    googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId,
+      scope: GOOGLE_SCOPES,
+      callback: handleOAuthCallback
+    });
+    addDebugLog('Google OAuth 초기화 완료');
+    return true;
+  } else {
+    addDebugLog('Google API가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.');
+    return false;
+  }
+}
+
+function handleOAuthCallback(response) {
+  if (response.error) {
+    addDebugLog(`OAuth 오류: ${response.error}`);
+    alert(`인증 실패: ${response.error}`);
+    return;
+  }
+
+  googleAccessToken = response.access_token;
+  addDebugLog('Google 인증 성공!');
+  updateGoogleSignInUI(true);
+
+  // gapi 초기화
+  gapi.client.init({}).then(() => {
+    return gapi.client.load('calendar', 'v3');
+  }).then(() => {
+    addDebugLog('Google Calendar API 로드 완료');
+    alert('구글 계정 연결 완료! 이제 일정을 수정할 수 있습니다.');
+  }).catch((error) => {
+    addDebugLog(`API 로드 실패: ${error.message}`);
+  });
+}
+
+function handleGoogleSignIn() {
+  // 클라이언트 ID 저장
+  const clientId = document.getElementById('googleClientId').value.trim();
+  if (clientId !== googleClientId) {
+    if (!initGoogleOAuth()) {
+      return;
+    }
+  }
+
+  if (!googleTokenClient) {
+    if (!initGoogleOAuth()) {
+      return;
+    }
+  }
+
+  // 인증 요청
+  googleTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function handleGoogleSignOut() {
+  if (googleAccessToken) {
+    google.accounts.oauth2.revoke(googleAccessToken, () => {
+      addDebugLog('Google 인증 해제 완료');
+    });
+  }
+
+  googleAccessToken = null;
+  updateGoogleSignInUI(false);
+  alert('구글 계정 연결이 해제되었습니다.');
+}
+
+function updateGoogleSignInUI(isSignedIn) {
+  const signInBtn = document.getElementById('googleSignInBtn');
+  const signOutBtn = document.getElementById('googleSignOutBtn');
+  const statusDiv = document.getElementById('googleSignInStatus');
+
+  if (isSignedIn) {
+    signInBtn.style.display = 'none';
+    signOutBtn.style.display = 'inline-block';
+    statusDiv.textContent = '✅ 연결됨 - 일정 수정 가능';
+    statusDiv.style.color = '#0f9d58';
+  } else {
+    signInBtn.style.display = 'inline-block';
+    signOutBtn.style.display = 'none';
+    statusDiv.textContent = '연결 안 됨';
+    statusDiv.style.color = '#666';
+  }
+}
+
+// 이벤트 모달 관련 함수들
+function openEventModal(event) {
+  currentEditingEvent = event;
+
+  // 모달 필드 채우기
+  document.getElementById('eventEditTitle').value = event.title || '';
+  document.getElementById('eventEditDate').value = event.date || '';
+  document.getElementById('eventEditStartTime').value = event.startTime || '';
+  document.getElementById('eventEditEndTime').value = event.endTime || '';
+  document.getElementById('eventEditLocation').value = event.location || '';
+  document.getElementById('eventEditDescription').value = event.description || '';
+  document.getElementById('eventEditCalendarInfo').textContent = event.calendarName || '알 수 없음';
+
+  // 읽기 전용 캘린더면 수정 불가
+  const calendar = calendars.find(c => c.name === event.calendarName);
+  const isEditable = calendar && calendar.type === 'api' && googleAccessToken;
+
+  document.getElementById('eventEditTitle').disabled = !isEditable;
+  document.getElementById('eventEditDate').disabled = !isEditable;
+  document.getElementById('eventEditStartTime').disabled = !isEditable;
+  document.getElementById('eventEditEndTime').disabled = !isEditable;
+  document.getElementById('eventEditLocation').disabled = !isEditable;
+  document.getElementById('eventEditDescription').disabled = !isEditable;
+
+  const saveBtn = document.querySelector('.event-modal-footer .btn-primary');
+  const deleteBtn = document.getElementById('eventDeleteBtn');
+
+  if (!isEditable) {
+    saveBtn.style.display = 'none';
+    deleteBtn.style.display = 'none';
+    if (!googleAccessToken) {
+      document.getElementById('eventEditCalendarInfo').innerHTML =
+        event.calendarName + '<br><span style="color: #dc3545; font-size: 12px;">⚠️ 수정하려면 구글 계정을 연결하세요</span>';
+    } else {
+      document.getElementById('eventEditCalendarInfo').innerHTML =
+        event.calendarName + '<br><span style="color: #999; font-size: 12px;">ⓘ 읽기 전용 캘린더</span>';
+    }
+  } else {
+    saveBtn.style.display = 'inline-block';
+    deleteBtn.style.display = 'inline-block';
+  }
+
+  // 모달 표시
+  document.getElementById('eventModalOverlay').style.display = 'block';
+  document.getElementById('eventModal').style.display = 'flex';
+}
+
+function closeEventModal() {
+  document.getElementById('eventModalOverlay').style.display = 'none';
+  document.getElementById('eventModal').style.display = 'none';
+  currentEditingEvent = null;
+}
+
+async function saveEventChanges() {
+  if (!currentEditingEvent || !googleAccessToken) {
+    alert('일정을 수정할 수 없습니다.');
+    return;
+  }
+
+  // 캘린더 찾기
+  const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
+  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
+    alert('이벤트 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  // 수정된 값 가져오기
+  const updatedTitle = document.getElementById('eventEditTitle').value.trim();
+  const updatedDate = document.getElementById('eventEditDate').value;
+  const updatedStartTime = document.getElementById('eventEditStartTime').value;
+  const updatedEndTime = document.getElementById('eventEditEndTime').value;
+  const updatedLocation = document.getElementById('eventEditLocation').value.trim();
+  const updatedDescription = document.getElementById('eventEditDescription').value.trim();
+
+  if (!updatedTitle) {
+    alert('제목을 입력해주세요.');
+    return;
+  }
+
+  try {
+    // Google Calendar API 형식으로 날짜/시간 변환
+    const startDateTime = `${updatedDate}T${updatedStartTime}:00`;
+    const endDateTime = `${updatedDate}T${updatedEndTime}:00`;
+
+    // API 요청 본문
+    const eventResource = {
+      summary: updatedTitle,
+      start: {
+        dateTime: startDateTime,
+        timeZone: 'Asia/Seoul'
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: 'Asia/Seoul'
+      }
+    };
+
+    if (updatedLocation) {
+      eventResource.location = updatedLocation;
+    }
+    if (updatedDescription) {
+      eventResource.description = updatedDescription;
+    }
+
+    addDebugLog(`일정 수정 중: ${currentEditingEvent.id}`);
+
+    // Google Calendar API 호출
+    const response = await gapi.client.request({
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      method: 'PATCH',
+      body: eventResource,
+      headers: {
+        'Authorization': `Bearer ${googleAccessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    addDebugLog('일정 수정 성공!');
+
+    // 로컬 이벤트 데이터 업데이트
+    const eventIndex = calendar.events.findIndex(e => e.id === currentEditingEvent.id);
+    if (eventIndex >= 0) {
+      calendar.events[eventIndex] = {
+        ...calendar.events[eventIndex],
+        title: updatedTitle,
+        date: updatedDate,
+        startTime: updatedStartTime,
+        endTime: updatedEndTime,
+        time: `${updatedStartTime} - ${updatedEndTime}`,
+        location: updatedLocation,
+        description: updatedDescription
+      };
+    }
+
+    // 화면 업데이트
+    renderCalendar();
+    saveToStorage();
+    closeEventModal();
+    alert('일정이 수정되었습니다!');
+
+  } catch (error) {
+    addDebugLog(`일정 수정 실패: ${error.message}`);
+    console.error('Error updating event:', error);
+    alert(`일정 수정 실패: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+async function deleteEvent() {
+  if (!currentEditingEvent || !googleAccessToken) {
+    alert('일정을 삭제할 수 없습니다.');
+    return;
+  }
+
+  if (!confirm('정말 이 일정을 삭제하시겠습니까?')) {
+    return;
+  }
+
+  // 캘린더 찾기
+  const calendar = calendars.find(c => c.name === currentEditingEvent.calendarName);
+  if (!calendar || !calendar.calendarId || !currentEditingEvent.id) {
+    alert('이벤트 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  try {
+    addDebugLog(`일정 삭제 중: ${currentEditingEvent.id}`);
+
+    // Google Calendar API 호출
+    await gapi.client.request({
+      path: `https://www.googleapis.com/calendar/v3/calendars/${calendar.calendarId}/events/${currentEditingEvent.id}`,
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${googleAccessToken}`
+      }
+    });
+
+    addDebugLog('일정 삭제 성공!');
+
+    // 로컬 이벤트 데이터에서 제거
+    calendar.events = calendar.events.filter(e => e.id !== currentEditingEvent.id);
+
+    // 화면 업데이트
+    renderCalendar();
+    saveToStorage();
+    closeEventModal();
+    alert('일정이 삭제되었습니다!');
+
+  } catch (error) {
+    addDebugLog(`일정 삭제 실패: ${error.message}`);
+    console.error('Error deleting event:', error);
+    alert(`일정 삭제 실패: ${error.message || '알 수 없는 오류'}`);
+  }
 }
 
 // 설정 패널
@@ -2373,8 +2837,13 @@ function renderMonthView() {
       eventDiv.style.backgroundColor = event.color;
       eventDiv.style.color = eventTextColor;
       eventDiv.style.fontSize = eventFontSize;
+      eventDiv.style.cursor = 'pointer';
       eventDiv.textContent = event.title;
       eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+
+      // 이벤트 클릭 시 모달 열기
+      eventDiv.onclick = () => openEventModal(event);
+
       cell.appendChild(eventDiv);
     });
     
@@ -2698,6 +3167,10 @@ function renderWeekView() {
           eventDiv.style.boxSizing = 'border-box';
           eventDiv.style.display = 'flex';
           eventDiv.style.flexDirection = 'column';
+          eventDiv.style.cursor = 'pointer';
+
+          // 이벤트 클릭 시 모달 열기
+          eventDiv.onclick = () => openEventModal(splitEvent);
 
           // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
           if (travelTimeSlots > 0) {
@@ -2933,6 +3406,10 @@ function renderDayView() {
         eventDiv.style.boxSizing = 'border-box';
         eventDiv.style.display = 'flex';
         eventDiv.style.flexDirection = 'column';
+        eventDiv.style.cursor = 'pointer';
+
+        // 이벤트 클릭 시 모달 열기
+        eventDiv.onclick = () => openEventModal(splitEvent);
 
         // 이동시간이 있으면 텍스트를 실제 일정 부분에만 표시
         if (travelTimeSlots > 0) {
@@ -3297,6 +3774,7 @@ function saveToStorage() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      googleClientId: googleClientId,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3333,6 +3811,7 @@ function exportCalendarSettings() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      googleClientId: googleClientId,
       calendars: calendars.map(cal => ({
         id: cal.id,
         name: cal.name,
@@ -3487,6 +3966,7 @@ function loadFromStorage() {
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
       eventFontSize = parsed.eventFontSize || '0.6em';
+      googleClientId = parsed.googleClientId || '';
       calendars = parsed.calendars || [];
 
       // UI 복원
@@ -3494,6 +3974,9 @@ function loadFromStorage() {
       document.getElementById('textAlignVertical').value = textAlignVertical;
       document.getElementById('eventTextColor').value = eventTextColor;
       document.getElementById('eventFontSize').value = eventFontSize;
+      if (googleClientId) {
+        document.getElementById('googleClientId').value = googleClientId;
+      }
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
@@ -3612,7 +4095,25 @@ window.debugCalendar = {
   addKoreanHolidays: addKoreanHolidays,
   addSampleCalendar: addSampleCalendar
 };
-  
+
+// Google API 초기화
+function gapiLoaded() {
+  gapi.load('client', () => {
+    addDebugLog('Google API 클라이언트 로드 완료');
+  });
+}
+
+// gapi가 로드되면 초기화
+if (typeof gapi !== 'undefined') {
+  gapiLoaded();
+} else {
+  // gapi가 아직 로드 안 됐으면 대기
+  window.addEventListener('load', () => {
+    if (typeof gapi !== 'undefined') {
+      setTimeout(gapiLoaded, 1000);
+    }
+  });
+}
 
 // 도움말 표시
 console.log('%c멀티 캘린더 뷰어 디버그 도구%c\n' +
