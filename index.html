@@ -3132,12 +3132,57 @@ function getAllEventsForDate(date) {
   const day = String(date.getDate()).padStart(2, '0');
   const dateString = `${year}-${month}-${day}`;
 
+  // 전날 날짜도 계산 (6시 넘어오는 이벤트 포함)
+  const prevDate = new Date(date);
+  prevDate.setDate(prevDate.getDate() - 1);
+  const prevYear = prevDate.getFullYear();
+  const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+  const prevDay = String(prevDate.getDate()).padStart(2, '0');
+  const prevDateString = `${prevYear}-${prevMonth}-${prevDay}`;
+
   calendars.forEach(calendar => {
     if (!calendar.visible || !calendar.events) return;
     if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) return;
 
+    // 당일 이벤트
     const events = calendar.events.filter(event => {
       return event.date === dateString;
+    });
+
+    // 전날 이벤트 중 6시 넘어가는 것들
+    const prevEvents = calendar.events.filter(event => {
+      if (event.date !== prevDateString) return false;
+      if (event.time === '종일') return false;
+
+      // 6시 넘어가는지 확인
+      const startHour = getEventHour(event.startTime);
+      const endHour = getEventHour(event.endTime);
+      const startMinute = getEventMinute(event.startTime);
+      const endMinute = getEventMinute(event.endTime);
+      const startPosition = getExactSlotPosition(startHour, startMinute);
+      const endPosition = getExactSlotPosition(endHour, endMinute);
+
+      return startPosition >= endPosition; // 6시 넘어가면 true
+    });
+
+    // 전날 이벤트를 분할해서 다음날 부분만 추가
+    prevEvents.forEach(event => {
+      const splitEvents = splitCrossDayEvent({
+        ...event,
+        color: calendar.color,
+        calendarName: calendar.name
+      });
+
+      // isNextDay 부분만 추가 (날짜가 dateString과 일치하는 것)
+      splitEvents.forEach(splitEvent => {
+        if (splitEvent.date === dateString) {
+          const eventKey = `${event.uid || event.id}_${splitEvent.date}_${splitEvent.startTime}`;
+          if (!seenEvents.has(eventKey)) {
+            seenEvents.set(eventKey, true);
+            allEvents.push(splitEvent);
+          }
+        }
+      });
     });
     
     events.forEach(event => {
