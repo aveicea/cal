@@ -3165,6 +3165,10 @@ function getAllEventsForDate(date) {
       return startPosition >= endPosition; // 6시 넘어가면 true
     });
 
+    if (prevEvents.length > 0) {
+      addDebugLog(`[${dateString}] 전날에서 넘어오는 이벤트 ${prevEvents.length}개 발견`);
+    }
+
     // 전날 이벤트를 분할해서 다음날 부분만 추가
     prevEvents.forEach(event => {
       const splitEvents = splitCrossDayEvent({
@@ -3173,12 +3177,15 @@ function getAllEventsForDate(date) {
         calendarName: calendar.name
       });
 
+      addDebugLog(`  "${event.title}" 분할 결과: ${splitEvents.length}개 (${splitEvents.map(e => e.date).join(', ')})`);
+
       // isNextDay 부분만 추가 (날짜가 dateString과 일치하는 것)
       splitEvents.forEach(splitEvent => {
         if (splitEvent.date === dateString) {
           const eventKey = `${event.uid || event.id}_${splitEvent.date}_${splitEvent.startTime}`;
           if (!seenEvents.has(eventKey)) {
             seenEvents.set(eventKey, true);
+            addDebugLog(`    추가: ${splitEvent.title} (${splitEvent.startTime}~${splitEvent.endTime})`);
             allEvents.push(splitEvent);
           }
         }
