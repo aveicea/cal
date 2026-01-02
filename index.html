@@ -2380,7 +2380,7 @@ function renderMonthView() {
       eventDiv.style.color = eventTextColor;
       eventDiv.style.fontSize = eventFontSize;
       eventDiv.textContent = event.title;
-      eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+      eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
       cell.appendChild(eventDiv);
     });
     
@@ -2654,7 +2654,7 @@ function renderWeekView() {
           badge.style.top = '2px';
           badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
           badge.style.cursor = 'pointer';
-          badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+          badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
           dayHeaders[day].appendChild(badge);
           allDayBadgeCount++;
@@ -2748,7 +2748,7 @@ function renderWeekView() {
           eventDiv.style.width = `${eventWidth}%`;
 
           eventDiv.textContent = splitEvent.title;
-          eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+          eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
           // 시작 슬롯의 셀에 추가
           if (dayCells[day][startSlot]) {
             dayCells[day][startSlot].appendChild(eventDiv);
@@ -2894,7 +2894,7 @@ function renderDayView() {
         badge.style.top = '2px';
         badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
         badge.style.cursor = 'pointer';
-        badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+        badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
         dayHeader.appendChild(badge);
         allDayBadgeCount++;
@@ -2983,7 +2983,7 @@ function renderDayView() {
         eventDiv.style.width = `${eventWidth}%`;
 
         eventDiv.textContent = splitEvent.title;
-        eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+        eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
         if (dayCells[startSlot]) {
           dayCells[startSlot].appendChild(eventDiv);
           slotEventDivs[startSlot].push(eventDiv);
