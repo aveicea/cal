@@ -4347,6 +4347,52 @@ function addKoreanHolidays() {
     });
 }
 
+// 샘플 캘린더 추가 함수
+function addSampleCalendar() {
+  const today = new Date();
+  const sampleCalendar = {
+    id: 'sample-' + Date.now(),
+    name: '샘플 캘린더',
+    type: 'ical',
+    color: '#4285f4',
+    visible: true,
+    events: [
+      {
+        id: 'sample-1',
+        title: '샘플 일정 1',
+        date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+        startTime: '09:00',
+        endTime: '10:00',
+        time: '09:00',
+        color: '#4285f4',
+        description: '샘플 일정입니다',
+        location: '',
+        travelTime: 0
+      },
+      {
+        id: 'sample-2',
+        title: '샘플 종일 일정',
+        date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate() + 1).padStart(2, '0')}`,
+        startTime: '종일',
+        endTime: '종일',
+        time: '종일',
+        color: '#4285f4',
+        description: '종일 일정 샘플입니다',
+        location: '',
+        travelTime: 0
+      }
+    ],
+    status: 'success',
+    statusMessage: '2개 이벤트'
+  };
+
+  calendars.push(sampleCalendar);
+  updateCalendarList();
+  renderCalendar();
+  saveToStorage();
+  addDebugLog('샘플 캘린더 추가 완료');
+}
+
 // 초기화 실행
 init();
 
