@@ -2308,7 +2308,7 @@ async function loadApiEvents(calendar) {
         uid: event.iCalUID,  // iCalendar UID (백업용)
         recurringEventId: event.recurringEventId,  // 반복 일정 ID
         title: event.summary || '제목 없음',
-        date: startTime.toISOString().split('T')[0],
+        date: event.start.date || `${startTime.getFullYear()}-${String(startTime.getMonth() + 1).padStart(2, '0')}-${String(startTime.getDate()).padStart(2, '0')}`,
         startTime: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
