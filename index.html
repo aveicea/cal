@@ -4005,10 +4005,22 @@ async function addCalendar() {
     status: 'loading',
     statusMessage: '로딩 중...'
   };
-  
+
   addDebugLog(`캘린더 추가 시작: ${name} (${type})`);
-  
+
   calendars.push(calendar);
+
+  // 새 캘린더를 모든 뷰에 자동으로 추가
+  if (!viewCalendarSettings.day.includes(calendar.id)) {
+    viewCalendarSettings.day.push(calendar.id);
+  }
+  if (!viewCalendarSettings.week.includes(calendar.id)) {
+    viewCalendarSettings.week.push(calendar.id);
+  }
+  if (!viewCalendarSettings.month.includes(calendar.id)) {
+    viewCalendarSettings.month.push(calendar.id);
+  }
+
   updateCalendarList();
   
   // 캘린더 데이터 로드
@@ -4243,6 +4255,19 @@ function loadFromStorage() {
       googleClientId = parsed.googleClientId || '';
       googleAccessToken = parsed.googleAccessToken || null;  // 토큰 로드 추가
       calendars = parsed.calendars || [];
+
+      // 저장된 캘린더들을 뷰 설정에 자동으로 추가 (없는 경우)
+      calendars.forEach(calendar => {
+        if (!viewCalendarSettings.day.includes(calendar.id)) {
+          viewCalendarSettings.day.push(calendar.id);
+        }
+        if (!viewCalendarSettings.week.includes(calendar.id)) {
+          viewCalendarSettings.week.push(calendar.id);
+        }
+        if (!viewCalendarSettings.month.includes(calendar.id)) {
+          viewCalendarSettings.month.push(calendar.id);
+        }
+      });
 
       // UI 복원
       document.getElementById('textAlignHorizontal').value = textAlignHorizontal;
