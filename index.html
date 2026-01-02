@@ -3112,7 +3112,7 @@ function renderMonthView() {
       eventDiv.style.fontSize = eventFontSize;
       eventDiv.style.cursor = 'pointer';
       eventDiv.textContent = event.title;
-      eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+      eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
       // 이벤트 클릭 시 모달 열기
       eventDiv.onclick = () => openEventModal(event);
@@ -3390,7 +3390,7 @@ function renderWeekView() {
           badge.style.top = '2px';
           badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
           badge.style.cursor = 'pointer';
-          badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+          badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
           dayHeaders[day].appendChild(badge);
           allDayBadgeCount++;
@@ -3486,9 +3486,9 @@ function renderWeekView() {
           
           eventDiv.style.left = `${leftPosition}%`;
           eventDiv.style.width = `${eventWidth}%`;
-          
+
           eventDiv.textContent = splitEvent.title;
-          eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+          eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
           // 시작 슬롯의 셀에 추가
           if (dayCells[day][startSlot]) {
             dayCells[day][startSlot].appendChild(eventDiv);
@@ -3634,7 +3634,7 @@ function renderDayView() {
         badge.style.top = '2px';
         badge.style.right = (2 + allDayBadgeCount * 14) + 'px'; // 14px 간격으로 배치
         badge.style.cursor = 'pointer';
-        badge.title = `[종일] ${event.title}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+        badge.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
 
         dayHeader.appendChild(badge);
         allDayBadgeCount++;
@@ -3725,9 +3725,9 @@ function renderDayView() {
         
         eventDiv.style.left = `${leftPosition}%`;
         eventDiv.style.width = `${eventWidth}%`;
-        
+
         eventDiv.textContent = splitEvent.title;
-        eventDiv.title = `${event.title}\n시간: ${event.time}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
+        eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description ? '\n설명: ' + event.description : ''}`;
         if (dayCells[startSlot]) {
           dayCells[startSlot].appendChild(eventDiv);
           slotEventDivs[startSlot].push(eventDiv);
@@ -3819,6 +3819,49 @@ function getEventMinute(timeString) {
   if (timeString === '종일') return 0;
   const parts = timeString.split(':');
   return parseInt(parts[1], 10) || 0;
+}
+
+// 시간 정보를 포맷하는 함수 (툴팁용)
+function formatEventTimeInfo(event) {
+  if (event.time === '종일' || event.startTime === '종일') {
+    return '종일';
+  }
+
+  const startTime = event.startTime || event.time;
+  const endTime = event.endTime;
+
+  if (!endTime || endTime === '종일') {
+    return startTime;
+  }
+
+  // 시간 차이 계산
+  const startHour = getEventHour(startTime);
+  const startMinute = getEventMinute(startTime);
+  const endHour = getEventHour(endTime);
+  const endMinute = getEventMinute(endTime);
+
+  const startTotalMinutes = startHour * 60 + startMinute;
+  let endTotalMinutes = endHour * 60 + endMinute;
+
+  // 종료 시간이 시작 시간보다 작으면 다음날로 간주
+  if (endTotalMinutes <= startTotalMinutes) {
+    endTotalMinutes += 24 * 60;
+  }
+
+  const durationMinutes = endTotalMinutes - startTotalMinutes;
+  const durationHours = Math.floor(durationMinutes / 60);
+  const durationMins = durationMinutes % 60;
+
+  let durationText = '';
+  if (durationHours > 0 && durationMins > 0) {
+    durationText = `${durationHours}시간 ${durationMins}분`;
+  } else if (durationHours > 0) {
+    durationText = `${durationHours}시간`;
+  } else {
+    durationText = `${durationMins}분`;
+  }
+
+  return `${startTime}-${endTime} (${durationText})`;
 }
 
 function getAllEventsForDate(date) {
