@@ -2735,9 +2735,9 @@ function renderWeekView() {
           
           // z-index: 나중에 추가된 이벤트(아래쪽)가 더 위로 오도록
           eventDiv.style.zIndex = 100 + currentEventIndex;
-          
+
           // 정확한 위치와 높이 계산
-          const cellHeight = 25; // 그리드 행 높이
+          const cellHeight = 24; // 그리드 행 높이
           const topOffset = (startPosition - startSlot) * cellHeight;
           const height = (clampedEndPosition - startPosition) * cellHeight;
           
@@ -2970,9 +2970,8 @@ function renderDayView() {
         eventDiv.style.wordBreak = 'break-word';
         eventDiv.style.lineHeight = '1.2';
         eventDiv.style.minHeight = '20px';     // 최소 높이 보장
-        
-        const containerHeight = calendarContent.clientHeight - 100; // 헤더 제외 
-        const cellHeight = Math.max(25, containerHeight / (SLOT_COUNT + 1)); // 최소 25px, 최대 동적
+
+        const cellHeight = 24; // 그리드 행 높이
         const topOffset = (startPosition - startSlot) * cellHeight;
         const height = (clampedEndPosition - startPosition) * cellHeight;
         
