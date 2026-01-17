@@ -2819,7 +2819,7 @@ function renderWeekView() {
         const leftPosition = index * eventWidth;
 
         bar.style.left = `${leftPosition}%`;
-        bar.style.width = `calc(${eventWidth}% - 4px)`;
+        bar.style.width = `calc(${eventWidth}% - 1px)`;
         bar.textContent = event.title;
         bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
@@ -3078,7 +3078,7 @@ function renderDayView() {
       const leftPosition = index * eventWidth;
 
       bar.style.left = `${leftPosition}%`;
-      bar.style.width = `calc(${eventWidth}% - 4px)`;
+      bar.style.width = `calc(${eventWidth}% - 1px)`;
       bar.textContent = event.title;
       bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
