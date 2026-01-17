@@ -3027,7 +3027,7 @@ function renderDayView() {
     timeLabel.id = 'current-time-label';
     timeLabel.style.position = 'absolute';
     timeLabel.style.right = '4px';
-    timeLabel.style.top = '-18px';
+    timeLabel.style.top = '-14px';
     timeLabel.style.fontSize = '9px';
     timeLabel.style.color = '#cc3333';
     timeLabel.style.fontWeight = 'bold';
@@ -3039,9 +3039,9 @@ function renderDayView() {
     nextEventLabel.id = 'next-event-label';
     nextEventLabel.style.position = 'absolute';
     nextEventLabel.style.right = '4px';
-    nextEventLabel.style.top = '4px';
+    nextEventLabel.style.top = '6px';
     nextEventLabel.style.fontSize = '9px';
-    nextEventLabel.style.color = '#cc3333';
+    nextEventLabel.style.color = '#333';
     nextEventLabel.style.fontWeight = 'bold';
     nextEventLabel.style.pointerEvents = 'none';
     currentTimeLine.appendChild(nextEventLabel);
@@ -3060,22 +3060,44 @@ function renderDayView() {
       // 현재 시간 표시
       timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-      // 다음 일정 찾기 (일간뷰에 표시된 캘린더의 이벤트만)
+      // 진행 중인 일정 또는 다음 일정 찾기 (일간뷰에 표시된 캘린더의 이벤트만)
       const currentTimeInMinutes = hours * 60 + minutes;
       const dayEvents = getAllEventsForDate(currentDate);
 
+      let ongoingEvent = null;
       let nextEvent = null;
       let minTimeDiff = Infinity;
 
       dayEvents.forEach(event => {
-        const eventTime = event.startTime || event.time;
-        if (eventTime && eventTime !== '종일') {
-          const eventHour = getEventHour(eventTime);
-          const eventMinute = getEventMinute(eventTime);
-          const eventTimeInMinutes = eventHour * 60 + eventMinute;
+        const startTime = event.startTime || event.time;
+        const endTime = event.endTime;
 
-          if (eventTimeInMinutes > currentTimeInMinutes) {
-            const diff = eventTimeInMinutes - currentTimeInMinutes;
+        if (startTime && startTime !== '종일') {
+          const startHour = getEventHour(startTime);
+          const startMinute = getEventMinute(startTime);
+          const startTimeInMinutes = startHour * 60 + startMinute;
+
+          // 종료 시간 확인
+          if (endTime && endTime !== '종일') {
+            const endHour = getEventHour(endTime);
+            const endMinute = getEventMinute(endTime);
+            let endTimeInMinutes = endHour * 60 + endMinute;
+
+            // 종료 시간이 시작 시간보다 작으면 다음날로 간주
+            if (endTimeInMinutes <= startTimeInMinutes) {
+              endTimeInMinutes += 24 * 60;
+            }
+
+            // 현재 진행 중인 일정인지 확인
+            if (startTimeInMinutes <= currentTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) {
+              ongoingEvent = event;
+              ongoingEvent.endTimeInMinutes = endTimeInMinutes;
+            }
+          }
+
+          // 다음 일정 찾기
+          if (startTimeInMinutes > currentTimeInMinutes) {
+            const diff = startTimeInMinutes - currentTimeInMinutes;
             if (diff < minTimeDiff) {
               minTimeDiff = diff;
               nextEvent = event;
@@ -3084,13 +3106,21 @@ function renderDayView() {
         }
       });
 
-      // 다음 일정까지 시간 표시
-      if (nextEvent) {
+      // 진행 중인 일정이 있으면 종료까지 남은 시간 표시
+      if (ongoingEvent) {
+        const timeDiff = ongoingEvent.endTimeInMinutes - currentTimeInMinutes;
+        const hoursUntil = Math.floor(timeDiff / 60);
+        const minutesUntil = timeDiff % 60;
+        nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
+        nextEventLabel.style.display = 'block';
+      } else if (nextEvent) {
+        // 진행 중인 일정이 없으면 다음 일정까지 시간 표시
         const hoursUntil = Math.floor(minTimeDiff / 60);
         const minutesUntil = minTimeDiff % 60;
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
         nextEventLabel.style.display = 'block';
       } else {
+        // 진행 중인 일정도 다음 일정도 없으면 Free
         nextEventLabel.textContent = 'Free';
         nextEventLabel.style.display = 'block';
       }
