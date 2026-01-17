@@ -858,11 +858,11 @@
   
   <div class="nav-controls">
     <button class="nav-btn" onclick="navigateCalendar(-1)">‹</button>
-    <button class="nav-btn" onclick="goToToday()">📅</button>
     <div class="current-date" id="currentDate"></div>
     <button class="nav-btn" onclick="navigateCalendar(1)">›</button>
   </div>
-  
+
+  <button class="nav-btn" onclick="goToToday()">📅</button>
   <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
   
   <div class="settings-panel" id="settingsPanel">
@@ -2788,7 +2788,6 @@ function renderDayView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gap = '0';
-  grid.style.height = '426px';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
@@ -3034,9 +3033,6 @@ function renderDayView() {
     timeLabel.style.color = '#cc3333';
     timeLabel.style.fontWeight = 'bold';
     timeLabel.style.pointerEvents = 'none';
-    timeLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-    timeLabel.style.padding = '2px 6px';
-    timeLabel.style.borderRadius = '4px';
     currentTimeLine.appendChild(timeLabel);
 
     // 다음 일정까지 남은 시간 표시 라벨 (선 아래)
@@ -3049,9 +3045,6 @@ function renderDayView() {
     nextEventLabel.style.color = '#cc3333';
     nextEventLabel.style.fontWeight = 'bold';
     nextEventLabel.style.pointerEvents = 'none';
-    nextEventLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-    nextEventLabel.style.padding = '2px 6px';
-    nextEventLabel.style.borderRadius = '4px';
     currentTimeLine.appendChild(nextEventLabel);
 
     // 현재 시간 업데이트 함수
