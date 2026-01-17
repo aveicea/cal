@@ -1513,13 +1513,14 @@ async function loadGooglePublicEvents(calendar) {
       return {
         title: event.summary || '제목 없음',
         date: startTime.toISOString().split('T')[0],
-        startTime: event.start.dateTime ? 
+        endDate: endTime.toISOString().split('T')[0],
+        startTime: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
-        endTime: event.end.dateTime ? 
+        endTime: event.end.dateTime ?
           endTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
-        time: event.start.dateTime ? 
+        time: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
         color: calendar.color,
@@ -1616,6 +1617,7 @@ async function loadApiEvents(calendar) {
       return {
         title: event.summary || '제목 없음',
         date: event.start.date || `${startTime.getFullYear()}-${String(startTime.getMonth() + 1).padStart(2, '0')}-${String(startTime.getDate()).padStart(2, '0')}`,
+        endDate: event.end.date || `${endTime.getFullYear()}-${String(endTime.getMonth() + 1).padStart(2, '0')}-${String(endTime.getDate()).padStart(2, '0')}`,
         startTime: event.start.dateTime ?
           startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) :
           '종일',
@@ -1689,16 +1691,26 @@ async function loadNotionEvents(calendar) {
       let startTime = '종일';
       let endTime = '종일';
 
+      let endDateStr = null;
       if (dateProp && dateProp.date) {
         const startDate = new Date(dateProp.date.start);
         dateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
 
-        // 시간 정보가 있는 경우
-        if (dateProp.date.start.includes('T')) {
-          startTime = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-          if (dateProp.date.end) {
-            const endDate = new Date(dateProp.date.end);
+        // 종료 날짜 처리
+        if (dateProp.date.end) {
+          const endDate = new Date(dateProp.date.end);
+          endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+          // 시간 정보가 있는 경우
+          if (dateProp.date.start.includes('T')) {
+            startTime = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
             endTime = endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          }
+        } else {
+          endDateStr = dateStr;
+          // 시간 정보가 있는 경우
+          if (dateProp.date.start.includes('T')) {
+            startTime = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
           }
         }
       }
@@ -1706,6 +1718,7 @@ async function loadNotionEvents(calendar) {
       return {
         title: title,
         date: dateStr,
+        endDate: endDateStr,
         startTime: startTime,
         endTime: endTime,
         time: startTime,
@@ -2681,6 +2694,38 @@ function renderWeekView() {
     }
   }
 
+  // 주 전체의 종일 일정 수집
+  const weekAllDayEvents = [];
+  const allDayEventsByRow = []; // 각 행에 배치된 일정들
+
+  for (let day = 0; day < 7; day++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + day);
+    const dayEvents = getAllEventsForDate(date);
+
+    dayEvents.forEach((event) => {
+      if (event.time === '종일' && event.startTime === '종일') {
+        const eventStartDate = new Date(event.date);
+        const eventEndDate = event.endDate ? new Date(event.endDate) : new Date(event.date);
+
+        // 이미 추가된 이벤트인지 확인 (중복 방지)
+        const isDuplicate = weekAllDayEvents.some(e =>
+          e.title === event.title &&
+          e.date === event.date &&
+          e.endDate === event.endDate
+        );
+
+        if (!isDuplicate) {
+          weekAllDayEvents.push({
+            ...event,
+            startDay: Math.floor((eventStartDate - startOfWeek) / (1000 * 60 * 60 * 24)),
+            endDay: Math.floor((eventEndDate - startOfWeek) / (1000 * 60 * 60 * 24))
+          });
+        }
+      }
+    });
+  }
+
   // 이벤트 렌더링
   for (let day = 0; day < 7; day++) {
     const date = new Date(startOfWeek);
@@ -2689,7 +2734,6 @@ function renderWeekView() {
     const dayEvents = getAllEventsForDate(date);
     const eventCounts = Array(SLOT_COUNT).fill(0); // 각 슬롯별 이벤트 개수
     const slotEventDivs = Array(SLOT_COUNT).fill().map(() => []); // 각 슬롯별 이벤트 div 저장
-    const allDayEvents = []; // 종일 일정 수집
 
     dayEvents.forEach((event) => {
       const splitEvents = splitCrossDayEvent(event);
@@ -2702,10 +2746,7 @@ function renderWeekView() {
         const dateString = `${year}-${month}-${dayOfMonth}`;
         if (splitEvent.date !== dateString) return; // 날짜가 다르면 스킵
 
-        if (splitEvent.time === '종일') {
-          // 종일 일정 수집
-          allDayEvents.push(event);
-        } else {
+        if (splitEvent.time !== '종일') {
           const startHour = getEventHour(splitEvent.startTime);
           const endHour = getEventHour(splitEvent.endTime);
           const startMinute = getEventMinute(splitEvent.startTime);
@@ -2806,27 +2847,6 @@ function renderWeekView() {
       });
     });
 
-    // 종일 일정 표시
-    if (allDayEvents.length > 0) {
-      allDayEvents.forEach((event, index) => {
-        const bar = document.createElement('div');
-        bar.className = 'all-day-event-bar';
-        bar.style.backgroundColor = event.color;
-
-        // 여러 종일 일정이 겹치면 너비를 나누기
-        const totalEvents = allDayEvents.length;
-        const eventWidth = Math.floor(100 / totalEvents);
-        const leftPosition = index * eventWidth;
-
-        bar.style.left = `${leftPosition}%`;
-        bar.style.width = `${eventWidth}%`;
-        bar.textContent = event.title;
-        bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
-
-        allDayCells[day].appendChild(bar);
-      });
-    }
-
     // 각 슬롯의 이벤트들에 적절한 모서리 처리 적용
     for (let slot = 0; slot < SLOT_COUNT; slot++) {
       if (slotEventDivs[slot].length > 0) {
@@ -2834,6 +2854,30 @@ function renderWeekView() {
       }
     }
   }
+
+  // 주 전체 종일 일정 표시 (여러 날짜에 걸쳐 표시)
+  weekAllDayEvents.forEach((event) => {
+    const startDay = Math.max(0, event.startDay);
+    const endDay = Math.min(6, event.endDay);
+
+    // 이번 주에 표시할 부분이 있는지 확인
+    if (startDay <= 6 && endDay >= 0) {
+      const bar = document.createElement('div');
+      bar.className = 'all-day-event-bar';
+      bar.style.backgroundColor = event.color;
+      bar.style.gridRow = '2';
+      bar.style.gridColumn = `${startDay + 2} / ${endDay + 3}`; // +2는 시간 컬럼 때문, +3은 span 끝
+      bar.style.position = 'relative';
+      bar.style.left = '0';
+      bar.style.right = '0';
+      bar.style.width = 'auto';
+      bar.style.margin = '1px 2px';
+      bar.textContent = event.title;
+      bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
+
+      grid.appendChild(bar);
+    }
+  });
 
   container.appendChild(grid);
   calendarContent.innerHTML = '';
