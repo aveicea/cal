@@ -2728,8 +2728,9 @@ function renderWeekView() {
           eventDiv.style.alignItems = textAlignHorizontal === 'left' ? 'flex-start' : 'center';
           eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
                   //추가
+          eventDiv.style.textAlign = 'center';
           eventDiv.style.wordWrap = 'break-word';
-          eventDiv.style.wordBreak = 'break-word';
+          eventDiv.style.wordBreak = 'normal';
           eventDiv.style.lineHeight = '1.2';
           eventDiv.style.minHeight = '20px';     // 최소 높이 보장
           
@@ -2966,8 +2967,9 @@ function renderDayView() {
         eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
         eventDiv.style.zIndex = 100 + currentEventIndex;
         //추가
+        eventDiv.style.textAlign = 'center';
         eventDiv.style.wordWrap = 'break-word';
-        eventDiv.style.wordBreak = 'break-word';
+        eventDiv.style.wordBreak = 'normal';
         eventDiv.style.lineHeight = '1.2';
         eventDiv.style.minHeight = '20px';     // 최소 높이 보장
 
@@ -3112,16 +3114,19 @@ function renderDayView() {
         const hoursUntil = Math.floor(timeDiff / 60);
         const minutesUntil = timeDiff % 60;
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
+        nextEventLabel.title = `진행 중: ${ongoingEvent.summary}`;
         nextEventLabel.style.display = 'block';
       } else if (nextEvent) {
         // 진행 중인 일정이 없으면 다음 일정까지 시간 표시
         const hoursUntil = Math.floor(minTimeDiff / 60);
         const minutesUntil = minTimeDiff % 60;
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
+        nextEventLabel.title = `다음 일정: ${nextEvent.summary}`;
         nextEventLabel.style.display = 'block';
       } else {
         // 진행 중인 일정도 다음 일정도 없으면 Free
         nextEventLabel.textContent = 'Free';
+        nextEventLabel.title = '';
         nextEventLabel.style.display = 'block';
       }
     };
