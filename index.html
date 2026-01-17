@@ -84,7 +84,7 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    margin-right: 20px;
+    margin-right: 0;
   }
   
   .nav-btn {
@@ -499,18 +499,18 @@
   .time-based-view {
     display: grid;
     background: white;
-    min-height: 600px;  /* 실제 필요한 높이로 설정 */
-    overflow: visible;  /* 부모가 스크롤 처리하도록 */
+    height: 100%;
+    overflow: visible;
   }
-  
+
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 30px repeat(18, 25px);
+    grid-template-rows: 25px repeat(18, 32px);
   }
-  
+
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 30px repeat(18, 25px);
+    grid-template-rows: 25px repeat(18, 32px);
   }
   
   .time-slot {
@@ -678,7 +678,7 @@
       max-width: none;
     }
     .nav-controls {
-      margin-right: 10px;
+      margin-right: 0;
     }
     .time-slot {
       font-size: 9px;
