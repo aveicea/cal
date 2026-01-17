@@ -3109,7 +3109,7 @@ function renderDayView() {
       if (nextEvent) {
         const hoursUntil = Math.floor(minTimeDiff / 60);
         const minutesUntil = minTimeDiff % 60;
-        nextEventLabel.textContent = `${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
+        nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
         nextEventLabel.style.display = 'block';
       } else {
         nextEventLabel.style.display = 'none';
