@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 30px 12px repeat(24, 24px);
+    grid-template-rows: 30px 18px repeat(24, 24px);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 30px 12px repeat(24, 24px);
+    grid-template-rows: 30px 18px repeat(24, 24px);
   }
   
   .time-slot {
@@ -631,9 +631,9 @@
   .all-day-event-bar {
     position: absolute;
     top: 1px;
-    height: 10px;
+    height: 16px;
     border-radius: 2px;
-    font-size: 7px;
+    font-size: 8px;
     color: white;
     font-weight: 500;
     overflow: hidden;
@@ -643,7 +643,8 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    padding: 0 3px;
+    padding: 0 4px;
+    box-sizing: border-box;
   }
   
   .loading {
@@ -2814,11 +2815,11 @@ function renderWeekView() {
 
         // 여러 종일 일정이 겹치면 너비를 나누기
         const totalEvents = allDayEvents.length;
-        const eventWidth = Math.floor(100 / totalEvents);
+        const eventWidth = 100 / totalEvents;
         const leftPosition = index * eventWidth;
 
         bar.style.left = `${leftPosition}%`;
-        bar.style.width = `${eventWidth}%`;
+        bar.style.width = `calc(${eventWidth}% - 4px)`;
         bar.textContent = event.title;
         bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
@@ -3073,11 +3074,11 @@ function renderDayView() {
 
       // 여러 종일 일정이 겹치면 너비를 나누기
       const totalEvents = allDayEvents.length;
-      const eventWidth = Math.floor(100 / totalEvents);
+      const eventWidth = 100 / totalEvents;
       const leftPosition = index * eventWidth;
 
       bar.style.left = `${leftPosition}%`;
-      bar.style.width = `${eventWidth}%`;
+      bar.style.width = `calc(${eventWidth}% - 4px)`;
       bar.textContent = event.title;
       bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
