@@ -3071,8 +3071,7 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      // 픽셀 기반 위치 계산
-      const position = 25 + (slotIndex + minuteOffset) * 33; // 25px header + 33px per slot
+      const position = (slotIndex + minuteOffset) * 33 + 25; // 33px per slot + 25px header
       currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
