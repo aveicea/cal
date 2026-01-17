@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 25px repeat(18, 32px);
+    grid-template-rows: auto repeat(18, 1fr);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 25px repeat(18, 32px);
+    grid-template-rows: auto repeat(18, 1fr);
   }
   
   .time-slot {
@@ -2533,16 +2533,16 @@ function renderWeekView() {
   }
 
   const container = document.createElement('div');
-  container.style.padding = '20px';
+  container.style.padding = '0';
   container.style.overflow = 'visible';
+  container.style.height = '100%';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view week-view';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
-  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = `${35 + SLOT_COUNT * 25}px`; // 헤더 + 슬롯들의 정확한 높이
+  grid.style.height = '100%';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -2788,16 +2788,16 @@ function renderWeekView() {
 // 일간 뷰
 function renderDayView() {
   const container = document.createElement('div');
-  container.style.padding = '20px';
+  container.style.padding = '0';
   container.style.overflow = 'visible';
+  container.style.height = '100%';
 
   const grid = document.createElement('div');
   grid.className = 'time-based-view day-view';
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
-  grid.style.gridTemplateRows = `35px repeat(${SLOT_COUNT}, 25px)`;
   grid.style.gap = '0';
-  grid.style.height = `${35 + SLOT_COUNT * 25}px`; // 헤더 + 슬롯들의 정확한 높이
+  grid.style.height = '100%';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
@@ -3028,22 +3028,40 @@ function renderDayView() {
     currentTimeLine.style.position = 'absolute';
     currentTimeLine.style.left = '1px';
     currentTimeLine.style.right = '1px';
-    currentTimeLine.style.height = '1px';
+    currentTimeLine.style.height = '2px';
     currentTimeLine.style.backgroundColor = '#cc3333';
     currentTimeLine.style.zIndex = '100';
     currentTimeLine.style.pointerEvents = 'none';
 
-    // 시간 표시 라벨
+    // 현재 시간 표시 라벨 (선 위)
     const timeLabel = document.createElement('div');
     timeLabel.id = 'current-time-label';
     timeLabel.style.position = 'absolute';
-    timeLabel.style.right = '4px';
-    timeLabel.style.bottom = '2px';
-    timeLabel.style.fontSize = '10px';
+    timeLabel.style.left = '4px';
+    timeLabel.style.top = '-18px';
+    timeLabel.style.fontSize = '11px';
     timeLabel.style.color = '#cc3333';
     timeLabel.style.fontWeight = 'bold';
     timeLabel.style.pointerEvents = 'none';
+    timeLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+    timeLabel.style.padding = '2px 6px';
+    timeLabel.style.borderRadius = '4px';
     currentTimeLine.appendChild(timeLabel);
+
+    // 다음 일정까지 남은 시간 표시 라벨 (선 아래)
+    const nextEventLabel = document.createElement('div');
+    nextEventLabel.id = 'next-event-label';
+    nextEventLabel.style.position = 'absolute';
+    nextEventLabel.style.left = '4px';
+    nextEventLabel.style.top = '4px';
+    nextEventLabel.style.fontSize = '11px';
+    nextEventLabel.style.color = '#cc3333';
+    nextEventLabel.style.fontWeight = 'bold';
+    nextEventLabel.style.pointerEvents = 'none';
+    nextEventLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+    nextEventLabel.style.padding = '2px 6px';
+    nextEventLabel.style.borderRadius = '4px';
+    currentTimeLine.appendChild(nextEventLabel);
 
     // 현재 시간 업데이트 함수
     const updateCurrentTimeLine = () => {
@@ -3052,9 +3070,50 @@ function renderDayView() {
       const minutes = now.getMinutes();
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
-      const position = (slotIndex + minuteOffset) * 25 + 35; // 25px per slot + 35px header
-      currentTimeLine.style.top = position + 'px';
+
+      // 동적 위치 계산 (퍼센트 기반)
+      const totalSlots = 18;
+      const headerPortion = 1; // 헤더가 차지하는 비중
+      const slotPortion = (slotIndex + minuteOffset) / totalSlots;
+      const position = ((slotPortion * 100) / (1 + totalSlots / headerPortion)) + (100 / (totalSlots + headerPortion));
+      currentTimeLine.style.top = position + '%';
+
+      // 현재 시간 표시
       timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+      // 다음 일정 찾기 (일간뷰에 표시된 캘린더의 이벤트만)
+      const currentTimeInMinutes = hours * 60 + minutes;
+      const dayEvents = getAllEventsForDate(currentDate);
+
+      let nextEvent = null;
+      let minTimeDiff = Infinity;
+
+      dayEvents.forEach(event => {
+        const eventTime = event.startTime || event.time;
+        if (eventTime && eventTime !== '종일') {
+          const eventHour = getEventHour(eventTime);
+          const eventMinute = getEventMinute(eventTime);
+          const eventTimeInMinutes = eventHour * 60 + eventMinute;
+
+          if (eventTimeInMinutes > currentTimeInMinutes) {
+            const diff = eventTimeInMinutes - currentTimeInMinutes;
+            if (diff < minTimeDiff) {
+              minTimeDiff = diff;
+              nextEvent = event;
+            }
+          }
+        }
+      });
+
+      // 다음 일정까지 시간 표시
+      if (nextEvent) {
+        const hoursUntil = Math.floor(minTimeDiff / 60);
+        const minutesUntil = minTimeDiff % 60;
+        nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
+        nextEventLabel.style.display = 'block';
+      } else {
+        nextEventLabel.style.display = 'none';
+      }
     };
 
     updateCurrentTimeLine();
