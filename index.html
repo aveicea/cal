@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 25px repeat(18, 33px);
+    grid-template-rows: 25px repeat(18, 30px);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 25px repeat(18, 33px);
+    grid-template-rows: 25px repeat(18, 30px);
   }
   
   .time-slot {
@@ -2542,7 +2542,7 @@ function renderWeekView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gap = '0';
-  grid.style.height = '619px';
+  grid.style.height = '565px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -2797,7 +2797,7 @@ function renderDayView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gap = '0';
-  grid.style.height = '619px';
+  grid.style.height = '565px';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
@@ -3071,7 +3071,7 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      const position = (slotIndex + minuteOffset) * 33 + 25; // 33px per slot + 25px header
+      const position = (slotIndex + minuteOffset) * 30 + 25; // 30px per slot + 25px header
       currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
