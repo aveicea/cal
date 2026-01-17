@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 30px repeat(18, 22px);
+    grid-template-rows: 30px repeat(24, 24px);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 30px repeat(18, 22px);
+    grid-template-rows: 30px repeat(24, 24px);
   }
   
   .time-slot {
@@ -3055,7 +3055,7 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      const position = (slotIndex + minuteOffset) * 22 + 30; // 22px per slot + 30px header
+      const position = (slotIndex + minuteOffset) * 24 + 30; // 24px per slot + 30px header
       currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
