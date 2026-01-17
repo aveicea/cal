@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: auto repeat(18, 1fr);
+    grid-template-rows: 25px repeat(18, 33px);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: auto repeat(18, 1fr);
+    grid-template-rows: 25px repeat(18, 33px);
   }
   
   .time-slot {
@@ -2542,7 +2542,7 @@ function renderWeekView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gap = '0';
-  grid.style.height = '100%';
+  grid.style.height = '619px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -2797,7 +2797,7 @@ function renderDayView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gap = '0';
-  grid.style.height = '100%';
+  grid.style.height = '619px';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
@@ -3071,12 +3071,9 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      // 동적 위치 계산 (퍼센트 기반)
-      const totalSlots = 18;
-      const headerPortion = 1; // 헤더가 차지하는 비중
-      const slotPortion = (slotIndex + minuteOffset) / totalSlots;
-      const position = ((slotPortion * 100) / (1 + totalSlots / headerPortion)) + (100 / (totalSlots + headerPortion));
-      currentTimeLine.style.top = position + '%';
+      // 픽셀 기반 위치 계산
+      const position = 25 + (slotIndex + minuteOffset) * 33; // 25px header + 33px per slot
+      currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
       timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
