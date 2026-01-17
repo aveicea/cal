@@ -6,26 +6,41 @@
 <title>멀티 캘린더 뷰어</title>
 <style>
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #333;
+    background: transparent;
     min-height: 100vh;
-    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    touch-action: manipulation;
+  }
+
+  #widget-container {
+    width: 100%;
+    max-width: 400px;
+    height: 700px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    max-width: 1000px;  /* 추가 - 전체 최대 가로 크기 */
-    margin: 0 auto;     /* 추가 - 가운데 정렬 */
+    overflow: hidden;
+    position: relative;
   }
   
   .header {
-    padding: 10px 20px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e5e7;
     flex-shrink: 0;
   }
   
@@ -130,19 +145,19 @@
   .settings-panel {
     position: absolute;
     top: 45px;
-    right: 20px;
+    right: 0;
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    width: 450px;
+    width: calc(100% - 40px);
+    max-width: 350px;
     z-index: 1000;
     display: none;
-    max-height: 70vh;
+    max-height: 500px;
     overflow-y: auto;
-    max-width: calc(100vw - 40px);  /* 추가 - 화면 크기에 맞춤 */
-    box-sizing: border-box;         /* 추가 */
+    box-sizing: border-box;
   }
   
   .settings-title {
@@ -410,14 +425,29 @@
     flex-direction: column;
     overflow: hidden;
   }
-  
+
   .calendar-content {
     flex: 1;
+    overflow-y: scroll;
     overflow-x: hidden;
-    overflow-y: auto;
-    background: #f8f9fa;
-    height: calc(100vh - 120px);  /* 이 줄 추가 */
-    min-height: 400px;  /* 이 줄 추가 */
+    background: transparent;
+  }
+
+  .calendar-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .calendar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .calendar-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+  }
+
+  .calendar-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
   }
     
   /* 월간 뷰 */
@@ -428,9 +458,10 @@
     gap: 1px;
     background: #e0e0e0;
     border: 1px solid #e0e0e0;
-    height: 500px;
-    width: 100%;  /* 추가 */
-    table-layout: fixed;  /* 추가 - 고정 레이아웃 */
+    height: 100%;
+    min-height: 400px;
+    width: 100%;
+    table-layout: fixed;
   }
   
     .calendar-day {
@@ -843,6 +874,7 @@
 </style>
 </head>
 <body>
+<div id="widget-container">
 <div class="header">
   <div class="view-selector">
     <button class="view-btn active" onclick="setView('day')" id="dayBtn">일</button>
@@ -3747,8 +3779,9 @@ console.log('%c멀티 캘린더 뷰어 디버그 도구%c\n' +
   'debugCalendar.clearStorage() - 저장된 데이터 삭제 및 새로고침\n' +
   'debugCalendar.addKoreanHolidays() - 한국 공휴일 캘린더 추가\n' +
   'debugCalendar.addSampleCalendar() - 샘플 캘린더 추가', 
-  'color: #D1D1D1; font-weight: bold; font-size: 14px;', 
+  'color: #D1D1D1; font-weight: bold; font-size: 14px;',
   'color: #333; font-size: 12px;');
 </script>
+</div>
 </body>
 </html>
