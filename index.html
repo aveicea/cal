@@ -858,9 +858,9 @@
   
   <div class="nav-controls">
     <button class="nav-btn" onclick="navigateCalendar(-1)">‹</button>
+    <button class="nav-btn" onclick="goToToday()">📅</button>
     <div class="current-date" id="currentDate"></div>
     <button class="nav-btn" onclick="navigateCalendar(1)">›</button>
-    <button class="nav-btn" onclick="goToToday()">📅</button>
   </div>
   
   <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
@@ -2534,7 +2534,6 @@ function renderWeekView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gap = '0';
-  grid.style.height = '426px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -3029,7 +3028,7 @@ function renderDayView() {
     const timeLabel = document.createElement('div');
     timeLabel.id = 'current-time-label';
     timeLabel.style.position = 'absolute';
-    timeLabel.style.left = '4px';
+    timeLabel.style.right = '4px';
     timeLabel.style.top = '-18px';
     timeLabel.style.fontSize = '11px';
     timeLabel.style.color = '#cc3333';
@@ -3044,7 +3043,7 @@ function renderDayView() {
     const nextEventLabel = document.createElement('div');
     nextEventLabel.id = 'next-event-label';
     nextEventLabel.style.position = 'absolute';
-    nextEventLabel.style.left = '4px';
+    nextEventLabel.style.right = '4px';
     nextEventLabel.style.top = '4px';
     nextEventLabel.style.fontSize = '11px';
     nextEventLabel.style.color = '#cc3333';
@@ -3100,7 +3099,8 @@ function renderDayView() {
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
         nextEventLabel.style.display = 'block';
       } else {
-        nextEventLabel.style.display = 'none';
+        nextEventLabel.textContent = 'Free';
+        nextEventLabel.style.display = 'block';
       }
     };
 
