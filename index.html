@@ -630,9 +630,9 @@
 
   .all-day-event-bar {
     position: absolute;
-    top: 1px;
-    height: 16px;
-    border-radius: 2px;
+    top: 2px;
+    bottom: 2px;
+    border-radius: 3px;
     font-size: 8px;
     color: white;
     font-weight: 500;
@@ -2815,11 +2815,11 @@ function renderWeekView() {
 
         // 여러 종일 일정이 겹치면 너비를 나누기
         const totalEvents = allDayEvents.length;
-        const eventWidth = 100 / totalEvents;
+        const eventWidth = Math.floor(100 / totalEvents);
         const leftPosition = index * eventWidth;
 
         bar.style.left = `${leftPosition}%`;
-        bar.style.width = `calc(${eventWidth}% - 1px)`;
+        bar.style.width = `${eventWidth}%`;
         bar.textContent = event.title;
         bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
@@ -3074,11 +3074,11 @@ function renderDayView() {
 
       // 여러 종일 일정이 겹치면 너비를 나누기
       const totalEvents = allDayEvents.length;
-      const eventWidth = 100 / totalEvents;
+      const eventWidth = Math.floor(100 / totalEvents);
       const leftPosition = index * eventWidth;
 
       bar.style.left = `${leftPosition}%`;
-      bar.style.width = `calc(${eventWidth}% - 1px)`;
+      bar.style.width = `${eventWidth}%`;
       bar.textContent = event.title;
       bar.title = `${event.title}\n시간: 종일\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
