@@ -505,12 +505,12 @@
 
   .week-view {
     grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: 20px repeat(18, 28px);
+    grid-template-rows: 30px repeat(18, 24px);
   }
 
   .day-view {
     grid-template-columns: 50px 1fr;
-    grid-template-rows: 20px repeat(18, 28px);
+    grid-template-rows: 30px repeat(18, 24px);
   }
   
   .time-slot {
@@ -2525,7 +2525,7 @@ function renderWeekView() {
   }
 
   const container = document.createElement('div');
-  container.style.padding = '0';
+  container.style.padding = '10px';
   container.style.overflow = 'visible';
   container.style.height = '100%';
 
@@ -2534,7 +2534,7 @@ function renderWeekView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px repeat(7, 1fr)`;
   grid.style.gap = '0';
-  grid.style.height = '524px';
+  grid.style.height = '462px';
 
   // 시간 헤더
   const timeHeader = document.createElement('div');
@@ -2780,7 +2780,7 @@ function renderWeekView() {
 // 일간 뷰
 function renderDayView() {
   const container = document.createElement('div');
-  container.style.padding = '0';
+  container.style.padding = '10px';
   container.style.overflow = 'visible';
   container.style.height = '100%';
 
@@ -2789,7 +2789,7 @@ function renderDayView() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = `80px 1fr`;
   grid.style.gap = '0';
-  grid.style.height = '524px';
+  grid.style.height = '462px';
   grid.style.position = 'relative'; 
 
   // 헤더들 (이전과 동일)
@@ -3063,7 +3063,7 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      const position = (slotIndex + minuteOffset) * 28 + 20; // 28px per slot + 20px header
+      const position = (slotIndex + minuteOffset) * 24 + 30; // 24px per slot + 30px header
       currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
