@@ -2634,7 +2634,7 @@ function renderWeekView() {
   // 각 날짜별 셀 저장용 배열
   const dayCells = Array.from({length: 7}, () => []);
 
-  // 종일 일정 표시 줄 추가
+  // 종일 일정 표시 줄 추가 - 시간 라벨만
   const allDayTimeSlot = document.createElement('div');
   allDayTimeSlot.className = 'all-day-slot';
   allDayTimeSlot.style.gridRow = '2';
@@ -2642,20 +2642,6 @@ function renderWeekView() {
   allDayTimeSlot.style.border = '1px solid #e0e0e0';
   allDayTimeSlot.style.backgroundColor = '#fafafa';
   grid.appendChild(allDayTimeSlot);
-
-  // 각 요일별 종일 일정 셀
-  const allDayCells = [];
-  for (let day = 0; day < 7; day++) {
-    const cell = document.createElement('div');
-    cell.className = 'all-day-slot';
-    cell.style.gridRow = '2';
-    cell.style.gridColumn = `${day + 2}`;
-    cell.style.border = '1px solid #e0e0e0';
-    cell.style.position = 'relative';
-    cell.style.backgroundColor = 'white';
-    allDayCells.push(cell);
-    grid.appendChild(cell);
-  }
 
   // 24시간 슬롯 생성
   for (let slotIndex = 0; slotIndex < SLOT_COUNT; slotIndex++) {
@@ -2879,9 +2865,9 @@ function renderWeekView() {
     // 이번 주에 표시할 부분이 있는지 확인
     if (startDay <= 6 && endDay >= 0 && startDay <= endDay) {
       const bar = document.createElement('div');
-      bar.style.backgroundColor = event.color;
       bar.style.gridRow = '2';
-      bar.style.gridColumn = `${startDay + 2} / ${endDay + 3}`; // +2는 시간 컬럼 때문, +3은 span 끝
+      bar.style.gridColumn = `${startDay + 2} / ${endDay + 3}`; // +2는 시간 컬럼, +3은 span 끝
+      bar.style.backgroundColor = event.color;
       bar.style.borderRadius = '3px';
       bar.style.fontSize = '8px';
       bar.style.color = 'white';
@@ -2894,6 +2880,7 @@ function renderWeekView() {
       bar.style.alignItems = 'center';
       bar.style.padding = '0 4px';
       bar.style.boxSizing = 'border-box';
+      bar.style.margin = '1px';
       bar.textContent = event.title;
       bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate || event.date})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
