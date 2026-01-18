@@ -2412,9 +2412,9 @@ function renderMonthView() {
   const saturdayOffset = 6 - lastDay.getDay();
   endDate.setDate(endDate.getDate() + saturdayOffset);
 
-  // 주 수 계산
+  // 주 수 계산 (최대 5주까지만 표시)
   const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-  const totalWeeks = Math.ceil(totalDays / 7);
+  const totalWeeks = Math.min(Math.ceil(totalDays / 7), 5);
 
   const grid = document.createElement('div');
   grid.className = 'calendar-grid month-view';
