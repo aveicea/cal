@@ -2694,9 +2694,8 @@ function renderWeekView() {
     }
   }
 
-  // 주 전체의 종일 일정 수집
-  const weekAllDayEvents = [];
-  const allDayEventsByRow = []; // 각 행에 배치된 일정들
+  // 주 전체의 종일 일정 수집 (중복 제거 및 날짜 범위 계산)
+  const weekAllDayEventsMap = new Map();
 
   for (let day = 0; day < 7; day++) {
     const date = new Date(startOfWeek);
@@ -2705,26 +2704,36 @@ function renderWeekView() {
 
     dayEvents.forEach((event) => {
       if (event.time === '종일' && event.startTime === '종일') {
-        const eventStartDate = new Date(event.date);
-        const eventEndDate = event.endDate ? new Date(event.endDate) : new Date(event.date);
+        // 고유 키 생성 (제목 + 시작일 + 종료일)
+        const key = `${event.title}_${event.date}_${event.endDate || event.date}`;
 
-        // 이미 추가된 이벤트인지 확인 (중복 방지)
-        const isDuplicate = weekAllDayEvents.some(e =>
-          e.title === event.title &&
-          e.date === event.date &&
-          e.endDate === event.endDate
-        );
+        if (!weekAllDayEventsMap.has(key)) {
+          // 시작일과 종료일의 요일 인덱스 계산
+          const eventStartDate = new Date(event.date + 'T00:00:00');
+          let eventEndDate;
 
-        if (!isDuplicate) {
-          weekAllDayEvents.push({
+          if (event.endDate) {
+            // Google Calendar API는 종일 이벤트의 end를 다음날로 설정하므로 하루 빼기
+            eventEndDate = new Date(event.endDate + 'T00:00:00');
+            eventEndDate.setDate(eventEndDate.getDate() - 1);
+          } else {
+            eventEndDate = new Date(event.date + 'T00:00:00');
+          }
+
+          const startDay = Math.floor((eventStartDate - startOfWeek) / (1000 * 60 * 60 * 24));
+          const endDay = Math.floor((eventEndDate - startOfWeek) / (1000 * 60 * 60 * 24));
+
+          weekAllDayEventsMap.set(key, {
             ...event,
-            startDay: Math.floor((eventStartDate - startOfWeek) / (1000 * 60 * 60 * 24)),
-            endDay: Math.floor((eventEndDate - startOfWeek) / (1000 * 60 * 60 * 24))
+            startDay: startDay,
+            endDay: endDay
           });
         }
       }
     });
   }
+
+  const weekAllDayEvents = Array.from(weekAllDayEventsMap.values());
 
   // 이벤트 렌더링
   for (let day = 0; day < 7; day++) {
@@ -2861,13 +2870,11 @@ function renderWeekView() {
     const endDay = Math.min(6, event.endDay);
 
     // 이번 주에 표시할 부분이 있는지 확인
-    if (startDay <= 6 && endDay >= 0) {
+    if (startDay <= 6 && endDay >= 0 && startDay <= endDay) {
       const bar = document.createElement('div');
       bar.style.backgroundColor = event.color;
       bar.style.gridRow = '2';
       bar.style.gridColumn = `${startDay + 2} / ${endDay + 3}`; // +2는 시간 컬럼 때문, +3은 span 끝
-      bar.style.position = 'static';
-      bar.style.height = '100%';
       bar.style.borderRadius = '3px';
       bar.style.fontSize = '8px';
       bar.style.color = 'white';
@@ -2878,11 +2885,10 @@ function renderWeekView() {
       bar.style.cursor = 'pointer';
       bar.style.display = 'flex';
       bar.style.alignItems = 'center';
-      bar.style.padding = '1px 4px';
+      bar.style.padding = '0 4px';
       bar.style.boxSizing = 'border-box';
-      bar.style.margin = '0';
       bar.textContent = event.title;
-      bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
+      bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate || event.date})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
       grid.appendChild(bar);
     }
