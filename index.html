@@ -2410,6 +2410,15 @@ function renderMonthView() {
   const sundayOffset = firstDay.getDay(); // 일요일 기준
   startDate.setDate(startDate.getDate() - sundayOffset);
 
+  // 마지막날이 포함된 주의 토요일 계산
+  const endDate = new Date(lastDay);
+  const saturdayOffset = 6 - lastDay.getDay();
+  endDate.setDate(endDate.getDate() + saturdayOffset);
+
+  // 주 수 계산
+  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  const totalWeeks = Math.ceil(totalDays / 7);
+
   const grid = document.createElement('div');
   grid.className = 'calendar-grid month-view';
   grid.style.display = 'grid';
@@ -2429,8 +2438,8 @@ function renderMonthView() {
 
   const today = new Date();
 
-  // 6주 처리
-  for (let week = 0; week < 6; week++) {
+  // 실제 필요한 주만 처리
+  for (let week = 0; week < totalWeeks; week++) {
     const weekStartDate = new Date(startDate);
     weekStartDate.setDate(startDate.getDate() + week * 7);
     weekStartDate.setHours(0, 0, 0, 0);
@@ -2485,17 +2494,19 @@ function renderMonthView() {
         bar.style.gridColumn = `${startDay + 1} / ${endDay + 2}`;
         bar.style.backgroundColor = event.color;
         bar.style.borderRadius = '3px';
-        bar.style.fontSize = '10px';
+        bar.style.fontSize = '8px';
         bar.style.color = 'white';
         bar.style.fontWeight = '500';
         bar.style.overflow = 'hidden';
         bar.style.textOverflow = 'ellipsis';
         bar.style.whiteSpace = 'nowrap';
         bar.style.cursor = 'pointer';
-        bar.style.padding = '2px 4px';
+        bar.style.padding = '1px 4px';
         bar.style.margin = '1px';
         bar.style.boxSizing = 'border-box';
-        bar.style.minHeight = '18px';
+        bar.style.minHeight = '12px';
+        bar.style.display = 'flex';
+        bar.style.alignItems = 'center';
         bar.textContent = event.title;
         bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate || event.date})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
@@ -3524,7 +3535,17 @@ function getAllEventsForDate(date) {
           const eventEnd = new Date(event.endDate + 'T00:00:00');
           eventEnd.setDate(eventEnd.getDate() - 1); // exclusive end를 inclusive로 변환
           const checkDate = new Date(dateString + 'T00:00:00');
-          return checkDate >= eventStart && checkDate <= eventEnd;
+          const inRange = checkDate >= eventStart && checkDate <= eventEnd;
+          console.log('[멀티데이 종일 이벤트 필터]', {
+            eventTitle: event.title,
+            eventDate: event.date,
+            eventEndDate: event.endDate,
+            checkDate: dateString,
+            eventStart: eventStart.toISOString(),
+            eventEnd: eventEnd.toISOString(),
+            inRange: inRange
+          });
+          return inRange;
         }
       }
 
