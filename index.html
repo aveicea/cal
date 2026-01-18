@@ -2697,13 +2697,18 @@ function renderWeekView() {
   // 주 전체의 종일 일정 수집 (중복 제거 및 날짜 범위 계산)
   const weekAllDayEventsMap = new Map();
 
+  // startOfWeek를 00:00:00으로 정규화
+  const weekStart = new Date(startOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+
   for (let day = 0; day < 7; day++) {
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate() + day);
     const dayEvents = getAllEventsForDate(date);
 
     dayEvents.forEach((event) => {
-      if (event.time === '종일' && event.startTime === '종일') {
+      // 종일 이벤트 확인 (시간이 '종일'이면 종일 이벤트)
+      if (event.time === '종일' || event.startTime === '종일') {
         // 고유 키 생성 (제목 + 시작일 + 종료일)
         const key = `${event.title}_${event.date}_${event.endDate || event.date}`;
 
@@ -2712,7 +2717,7 @@ function renderWeekView() {
           const eventStartDate = new Date(event.date + 'T00:00:00');
           let eventEndDate;
 
-          if (event.endDate) {
+          if (event.endDate && event.endDate !== event.date) {
             // Google Calendar API는 종일 이벤트의 end를 다음날로 설정하므로 하루 빼기
             eventEndDate = new Date(event.endDate + 'T00:00:00');
             eventEndDate.setDate(eventEndDate.getDate() - 1);
@@ -2720,8 +2725,8 @@ function renderWeekView() {
             eventEndDate = new Date(event.date + 'T00:00:00');
           }
 
-          const startDay = Math.floor((eventStartDate - startOfWeek) / (1000 * 60 * 60 * 24));
-          const endDay = Math.floor((eventEndDate - startOfWeek) / (1000 * 60 * 60 * 24));
+          const startDay = Math.round((eventStartDate - weekStart) / (1000 * 60 * 60 * 24));
+          const endDay = Math.round((eventEndDate - weekStart) / (1000 * 60 * 60 * 24));
 
           weekAllDayEventsMap.set(key, {
             ...event,
@@ -2734,6 +2739,10 @@ function renderWeekView() {
   }
 
   const weekAllDayEvents = Array.from(weekAllDayEventsMap.values());
+  console.log('Week all-day events:', weekAllDayEvents.length);
+  weekAllDayEvents.forEach(e => {
+    console.log(`Event: ${e.title}, startDay: ${e.startDay}, endDay: ${e.endDay}, date: ${e.date}, endDate: ${e.endDate}`);
+  });
 
   // 이벤트 렌더링
   for (let day = 0; day < 7; day++) {
