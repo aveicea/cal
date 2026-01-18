@@ -3076,8 +3076,10 @@ function renderDayView() {
       if (splitEvent.date !== dateString) return; // 날짜가 다르면 스킵
 
       if (splitEvent.time === '종일') {
-        // 종일 일정 수집
-        allDayEvents.push(event);
+        // 종일 일정 수집 (이미 있으면 추가하지 않음)
+        if (!allDayEvents.some(e => e.title === event.title && e.date === event.date)) {
+          allDayEvents.push(event);
+        }
       } else {
         const startHour = getEventHour(splitEvent.startTime);
         const endHour = getEventHour(splitEvent.endTime);
@@ -3427,9 +3429,23 @@ function getAllEventsForDate(date) {
     if (!calendar.visible || !calendar.events) return;
     if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) return;
 
-    // 당일 이벤트
+    // 당일 이벤트 + 멀티데이 종일 이벤트
     const events = calendar.events.filter(event => {
-      return event.date === dateString;
+      // 당일 시작 이벤트
+      if (event.date === dateString) return true;
+
+      // 종일 이벤트이고 날짜 범위에 포함되는지 확인
+      if (event.time === '종일' || event.startTime === '종일') {
+        if (event.endDate && event.endDate !== event.date) {
+          const eventStart = new Date(event.date + 'T00:00:00');
+          const eventEnd = new Date(event.endDate + 'T00:00:00');
+          eventEnd.setDate(eventEnd.getDate() - 1); // exclusive end를 inclusive로 변환
+          const checkDate = new Date(dateString + 'T00:00:00');
+          return checkDate >= eventStart && checkDate <= eventEnd;
+        }
+      }
+
+      return false;
     });
 
     // 전날 이벤트 중 6시 넘어가는 것들
