@@ -1832,7 +1832,17 @@ function parseIcalData(icalText) {
             const endDate = parseIcalDate(value);
             if (endDate) {
               currentEvent.endTime = endDate.time;
-              currentEvent.endDate = endDate.date;
+              // 종일 이벤트는 DTEND가 다음날로 설정되어 있으므로 하루 빼기
+              if (endDate.isAllDay) {
+                const endDateObj = new Date(endDate.date + 'T00:00:00');
+                endDateObj.setDate(endDateObj.getDate() - 1);
+                const year = endDateObj.getFullYear();
+                const month = String(endDateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(endDateObj.getDate()).padStart(2, '0');
+                currentEvent.endDate = `${year}-${month}-${day}`;
+              } else {
+                currentEvent.endDate = endDate.date;
+              }
             }
             break;
           case 'RRULE':
