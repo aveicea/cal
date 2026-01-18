@@ -1744,8 +1744,9 @@ function parseIcalData(icalText) {
   const exceptionEvents = new Map();
   const recurringEvents = [];
   
+  console.log('[iCal 원본 데이터]', icalText.substring(0, 2000));
   addDebugLog(`iCal 파싱 시작: ${lines.length}줄`);
-  
+
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
     
