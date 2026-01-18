@@ -1510,7 +1510,7 @@ async function loadGooglePublicEvents(calendar) {
       const startTime = new Date(startDate);
       const endTime = new Date(endDate);
       
-      return {
+      const mappedEvent = {
         title: event.summary || '제목 없음',
         date: startTime.toISOString().split('T')[0],
         endDate: endTime.toISOString().split('T')[0],
@@ -1527,6 +1527,14 @@ async function loadGooglePublicEvents(calendar) {
         description: event.description || '',
         location: event.location || ''  // 위치 정보 추가
       };
+      console.log('[Public 캘린더 이벤트 매핑]', {
+        title: mappedEvent.title,
+        originalStart: event.start,
+        originalEnd: event.end,
+        date: mappedEvent.date,
+        endDate: mappedEvent.endDate
+      });
+      return mappedEvent;
     });
     
     addDebugLog(`구글 공개 캘린더 로드 완료: ${calendar.events.length}개 이벤트`);
@@ -1614,7 +1622,7 @@ async function loadApiEvents(calendar) {
         })}`);
       }
 
-      return {
+      const mappedEvent = {
         title: event.summary || '제목 없음',
         date: event.start.date || `${startTime.getFullYear()}-${String(startTime.getMonth() + 1).padStart(2, '0')}-${String(startTime.getDate()).padStart(2, '0')}`,
         endDate: event.end.date || `${endTime.getFullYear()}-${String(endTime.getMonth() + 1).padStart(2, '0')}-${String(endTime.getDate()).padStart(2, '0')}`,
@@ -1632,6 +1640,14 @@ async function loadApiEvents(calendar) {
         location: event.location || '',
         travelTime: travelTime
       };
+      console.log('[API 캘린더 이벤트 매핑]', {
+        title: mappedEvent.title,
+        originalStart: event.start,
+        originalEnd: event.end,
+        date: mappedEvent.date,
+        endDate: mappedEvent.endDate
+      });
+      return mappedEvent;
     });
 
     addDebugLog(`API 캘린더 로드 완료: ${calendar.events.length}개 이벤트`);
