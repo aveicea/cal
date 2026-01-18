@@ -438,7 +438,7 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 0;
     background: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #f0f0f0;
     width: 100%;
     table-layout: fixed;
   }
@@ -515,7 +515,7 @@
     padding: 2px;
     font-size: 8px;
     color: #666;
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid #f0f0f0;
     border-bottom: 1px solid #f0f0f0;
     text-align: center;
     font-weight: 500;
@@ -542,7 +542,7 @@
     font-weight: 500;
     text-align: center;
     font-size: 11px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #f0f0f0;
     border-right: 1px solid #f0f0f0;
     color: #333;
     display: flex;
@@ -2531,17 +2531,20 @@ function renderMonthView() {
       cell.style.gridColumn = `${day + 1}`;
       cell.style.minHeight = '100px';
       cell.style.maxHeight = '100px';
-      cell.style.border = '1px solid #e0e0e0';
+      cell.style.border = '1px solid #f0f0f0';
       cell.style.padding = '4px';
       cell.style.position = 'relative';
       cell.style.overflowY = 'auto';
       cell.style.overflowX = 'hidden';
 
-      if (cellDate.getMonth() !== currentDate.getMonth()) {
+      const isOtherMonth = cellDate.getMonth() !== currentDate.getMonth();
+      const isToday = cellDate.toDateString() === today.toDateString();
+
+      if (isOtherMonth) {
         cell.classList.add('other-month');
       }
 
-      if (cellDate.toDateString() === today.toDateString()) {
+      if (isToday) {
         cell.classList.add('today');
       }
 
@@ -2550,8 +2553,10 @@ function renderMonthView() {
       dayNumber.textContent = cellDate.getDate();
       dayNumber.style.position = 'sticky';
       dayNumber.style.top = '0';
-      dayNumber.style.backgroundColor = 'white';
-      dayNumber.style.zIndex = '1';
+      dayNumber.style.backgroundColor = isOtherMonth ? '#f8f9fa' : 'white';
+      dayNumber.style.zIndex = '10';
+      dayNumber.style.padding = '2px 0';
+      dayNumber.style.marginBottom = '2px';
       cell.appendChild(dayNumber);
 
       // 일반 이벤트만 표시 (종일 이벤트 제외)
@@ -2727,7 +2732,7 @@ function renderWeekView() {
   timeHeader.textContent = '시간';
   timeHeader.style.gridRow = '1';
   timeHeader.style.gridColumn = '1';
-  timeHeader.style.border = '1px solid #e0e0e0';
+  timeHeader.style.border = '1px solid #f0f0f0';
   timeHeader.style.backgroundColor = '#f5f5f5';
   timeHeader.style.padding = '8px';
   timeHeader.style.textAlign = 'center';
@@ -2745,7 +2750,7 @@ function renderWeekView() {
     header.className = 'week-header';
     header.style.gridRow = '1';
     header.style.gridColumn = `${i + 2}`;
-    header.style.border = '1px solid #e0e0e0';
+    header.style.border = '1px solid #f0f0f0';
     header.style.backgroundColor = '#f5f5f5';
     header.style.padding = '8px';
     header.style.textAlign = 'center';
@@ -2778,7 +2783,7 @@ function renderWeekView() {
   allDayTimeSlot.className = 'all-day-slot';
   allDayTimeSlot.style.gridRow = '2';
   allDayTimeSlot.style.gridColumn = '1';
-  allDayTimeSlot.style.border = '1px solid #e0e0e0';
+  allDayTimeSlot.style.border = '1px solid #f0f0f0';
   allDayTimeSlot.style.backgroundColor = '#fafafa';
   grid.appendChild(allDayTimeSlot);
 
@@ -2792,7 +2797,7 @@ function renderWeekView() {
     timeSlot.textContent = `${displayHour.toString().padStart(2, '0')}:00`;
     timeSlot.style.gridRow = `${slotIndex + 3}`;
     timeSlot.style.gridColumn = '1';
-    timeSlot.style.border = '1px solid #e0e0e0';
+    timeSlot.style.border = '1px solid #f0f0f0';
     timeSlot.style.padding = '8px';
     timeSlot.style.fontSize = '0.8em';
     timeSlot.style.textAlign = 'center';
@@ -2807,7 +2812,7 @@ function renderWeekView() {
       cell.dataset.slot = slotIndex;
       cell.style.gridRow = `${slotIndex + 3}`;
       cell.style.gridColumn = `${day + 2}`;
-      cell.style.border = '1px solid #e0e0e0';
+      cell.style.border = '1px solid #f0f0f0';
       cell.style.position = 'relative';  // 중요: 자식 요소들의 absolute positioning 기준점
       cell.style.backgroundColor = 'white';
 
@@ -3075,7 +3080,7 @@ function renderDayView() {
   timeHeader.textContent = '시간';
   timeHeader.style.gridRow = '1';
   timeHeader.style.gridColumn = '1';
-  timeHeader.style.border = '1px solid #e0e0e0';
+  timeHeader.style.border = '1px solid #f0f0f0';
   timeHeader.style.backgroundColor = '#f5f5f5';
   timeHeader.style.padding = '8px';
   timeHeader.style.textAlign = 'center';
@@ -3106,7 +3111,7 @@ function renderDayView() {
   dayHeader.appendChild(dayName);
   dayHeader.style.gridRow = '1';
   dayHeader.style.gridColumn = '2';
-  dayHeader.style.border = '1px solid #e0e0e0';
+  dayHeader.style.border = '1px solid #f0f0f0';
   dayHeader.style.padding = '8px';
   dayHeader.style.textAlign = 'center';
   dayHeader.style.position = 'relative'; // 배지 위치 기준점
@@ -3117,7 +3122,7 @@ function renderDayView() {
   allDayTimeSlot.className = 'all-day-slot';
   allDayTimeSlot.style.gridRow = '2';
   allDayTimeSlot.style.gridColumn = '1';
-  allDayTimeSlot.style.border = '1px solid #e0e0e0';
+  allDayTimeSlot.style.border = '1px solid #f0f0f0';
   allDayTimeSlot.style.backgroundColor = '#fafafa';
   grid.appendChild(allDayTimeSlot);
 
@@ -3125,7 +3130,7 @@ function renderDayView() {
   allDayCell.className = 'all-day-slot';
   allDayCell.style.gridRow = '2';
   allDayCell.style.gridColumn = '2';
-  allDayCell.style.border = '1px solid #e0e0e0';
+  allDayCell.style.border = '1px solid #f0f0f0';
   allDayCell.style.position = 'relative';
   allDayCell.style.backgroundColor = 'white';
   grid.appendChild(allDayCell);
@@ -3142,7 +3147,7 @@ function renderDayView() {
     timeSlot.textContent = `${displayHour.toString().padStart(2, '0')}:00`;
     timeSlot.style.gridRow = `${slotIndex + 3}`;
     timeSlot.style.gridColumn = '1';
-    timeSlot.style.border = '1px solid #e0e0e0';
+    timeSlot.style.border = '1px solid #f0f0f0';
     timeSlot.style.padding = '8px';
     timeSlot.style.fontSize = '0.8em';
     timeSlot.style.textAlign = 'center';
@@ -3154,7 +3159,7 @@ function renderDayView() {
     cell.dataset.slot = slotIndex;
     cell.style.gridRow = `${slotIndex + 3}`;
     cell.style.gridColumn = '2';
-    cell.style.border = '1px solid #e0e0e0';
+    cell.style.border = '1px solid #f0f0f0';
     cell.style.position = 'relative';
     cell.style.backgroundColor = 'white';
     
