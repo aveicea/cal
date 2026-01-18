@@ -2863,15 +2863,24 @@ function renderWeekView() {
     // 이번 주에 표시할 부분이 있는지 확인
     if (startDay <= 6 && endDay >= 0) {
       const bar = document.createElement('div');
-      bar.className = 'all-day-event-bar';
       bar.style.backgroundColor = event.color;
       bar.style.gridRow = '2';
       bar.style.gridColumn = `${startDay + 2} / ${endDay + 3}`; // +2는 시간 컬럼 때문, +3은 span 끝
-      bar.style.position = 'relative';
-      bar.style.left = '0';
-      bar.style.right = '0';
-      bar.style.width = 'auto';
-      bar.style.margin = '1px 2px';
+      bar.style.position = 'static';
+      bar.style.height = '100%';
+      bar.style.borderRadius = '3px';
+      bar.style.fontSize = '8px';
+      bar.style.color = 'white';
+      bar.style.fontWeight = '500';
+      bar.style.overflow = 'hidden';
+      bar.style.textOverflow = 'ellipsis';
+      bar.style.whiteSpace = 'nowrap';
+      bar.style.cursor = 'pointer';
+      bar.style.display = 'flex';
+      bar.style.alignItems = 'center';
+      bar.style.padding = '1px 4px';
+      bar.style.boxSizing = 'border-box';
+      bar.style.margin = '0';
       bar.textContent = event.title;
       bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
 
