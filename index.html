@@ -1832,17 +1832,7 @@ function parseIcalData(icalText) {
             const endDate = parseIcalDate(value);
             if (endDate) {
               currentEvent.endTime = endDate.time;
-              // 종일 이벤트는 DTEND가 다음날로 설정되어 있으므로 하루 빼기
-              if (endDate.isAllDay) {
-                const endDateObj = new Date(endDate.date + 'T00:00:00');
-                endDateObj.setDate(endDateObj.getDate() - 1);
-                const year = endDateObj.getFullYear();
-                const month = String(endDateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(endDateObj.getDate()).padStart(2, '0');
-                currentEvent.endDate = `${year}-${month}-${day}`;
-              } else {
-                currentEvent.endDate = endDate.date;
-              }
+              currentEvent.endDate = endDate.date;
             }
             break;
           case 'RRULE':
@@ -2716,7 +2706,7 @@ function renderWeekView() {
           let eventEndDate;
 
           if (event.endDate && event.endDate !== event.date) {
-            // Google Calendar API는 종일 이벤트의 end를 다음날로 설정하므로 하루 빼기
+            // 모든 캘린더 타입에서 endDate는 exclusive(다음날)로 저장되므로 하루 빼기
             eventEndDate = new Date(event.endDate + 'T00:00:00');
             eventEndDate.setDate(eventEndDate.getDate() - 1);
           } else {
@@ -2725,6 +2715,18 @@ function renderWeekView() {
 
           const startDay = Math.round((eventStartDate - weekStart) / (1000 * 60 * 60 * 24));
           const endDay = Math.round((eventEndDate - weekStart) / (1000 * 60 * 60 * 24));
+
+          console.log('[종일 이벤트 수집]', {
+            title: event.title,
+            date: event.date,
+            endDate: event.endDate,
+            eventStartDate: eventStartDate.toISOString(),
+            eventEndDate: eventEndDate.toISOString(),
+            weekStart: weekStart.toISOString(),
+            startDay,
+            endDay,
+            span: endDay - startDay + 1
+          });
 
           weekAllDayEventsMap.set(key, {
             ...event,
@@ -2871,6 +2873,16 @@ function renderWeekView() {
   weekAllDayEvents.forEach((event) => {
     const startDay = Math.max(0, event.startDay);
     const endDay = Math.min(6, event.endDay);
+
+    console.log('[종일 이벤트 렌더링]', {
+      title: event.title,
+      startDay: event.startDay,
+      endDay: event.endDay,
+      clampedStart: startDay,
+      clampedEnd: endDay,
+      gridColumn: `${startDay + 2} / ${endDay + 3}`,
+      willRender: startDay <= 6 && endDay >= 0 && startDay <= endDay
+    });
 
     // 이번 주에 표시할 부분이 있는지 확인
     if (startDay <= 6 && endDay >= 0 && startDay <= endDay) {
