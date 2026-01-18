@@ -1760,6 +1760,11 @@ function parseIcalData(icalText) {
     } 
     else if (line === 'END:VEVENT' && currentEvent) {
       if (currentEvent.summary && currentEvent.dtstart) {
+        console.log('[baseEvent 생성]', {
+          title: currentEvent.summary,
+          currentEventEndDate: currentEvent.endDate,
+          currentEventDate: currentEvent.date
+        });
         const baseEvent = {
           id: currentEvent.uid || `event_${Date.now()}_${Math.random()}`,
           uid: currentEvent.uid,
@@ -1779,6 +1784,7 @@ function parseIcalData(icalText) {
           recurrenceId: currentEvent.recurrenceId,
           isException: currentEvent.isException
         };
+        console.log('[baseEvent 완성]', { title: baseEvent.title, endDate: baseEvent.endDate });
         
         // 수정된 인스턴스인 경우
         if (currentEvent.recurrenceId && currentEvent.uid) {
@@ -1830,9 +1836,11 @@ function parseIcalData(icalText) {
             break;
           case 'DTEND':
             const endDate = parseIcalDate(value);
+            console.log('[DTEND 파싱]', { value, parsed: endDate, currentEvent: {...currentEvent} });
             if (endDate) {
               currentEvent.endTime = endDate.time;
               currentEvent.endDate = endDate.date;
+              console.log('[DTEND 저장됨]', { endTime: endDate.time, endDate: endDate.date });
             }
             break;
           case 'RRULE':
