@@ -1731,7 +1731,7 @@ async function loadNotionEvents(calendar) {
         }
       }
 
-      return {
+      const mappedEvent = {
         title: title,
         date: dateStr,
         endDate: endDateStr,
@@ -1742,6 +1742,13 @@ async function loadNotionEvents(calendar) {
         description: '',
         location: ''
       };
+      console.log('[Notion 캘린더 이벤트 매핑]', {
+        title: mappedEvent.title,
+        date: mappedEvent.date,
+        endDate: mappedEvent.endDate,
+        dateProp: dateProp?.date
+      });
+      return mappedEvent;
     }).filter(event => event.date !== null); // 날짜가 없는 항목 제외
 
     addDebugLog(`Notion 데이터베이스 로드 완료: ${calendar.events.length}개 이벤트`);
@@ -2405,66 +2412,149 @@ function renderMonthView() {
 
   const grid = document.createElement('div');
   grid.className = 'calendar-grid month-view';
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+  grid.style.gap = '0';
 
   // 요일 헤더 (일요일부터 시작)
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  weekdays.forEach(day => {
+  weekdays.forEach((day, index) => {
     const header = document.createElement('div');
     header.className = 'week-header';
     header.textContent = day;
+    header.style.gridRow = '1';
+    header.style.gridColumn = `${index + 1}`;
     grid.appendChild(header);
   });
-  
-  // 날짜 셀
+
   const today = new Date();
-  for (let i = 0; i < 42; i++) {
-    const cellDate = new Date(startDate);
-    cellDate.setDate(startDate.getDate() + i);
-    
-    const cell = document.createElement('div');
-    cell.className = 'calendar-day';
-    
-    if (cellDate.getMonth() !== currentDate.getMonth()) {
-      cell.classList.add('other-month');
-    }
-    
-    if (cellDate.toDateString() === today.toDateString()) {
-      cell.classList.add('today');
-    }
-    
-    const dayNumber = document.createElement('div');
-    dayNumber.className = 'day-number';
-    dayNumber.textContent = cellDate.getDate();
-    cell.appendChild(dayNumber);
-    
-    // 모든 이벤트 표시 (시간순 정렬)
-    const dayEvents = getAllEventsForDate(cellDate);
 
-    // 시간순으로 정렬 (종일 이벤트가 먼저, 그 다음 시간순)
-    dayEvents.sort((a, b) => {
-      if (a.time === '종일' && b.time !== '종일') return -1;
-      if (a.time !== '종일' && b.time === '종일') return 1;
-      if (a.time === '종일' && b.time === '종일') return 0;
+  // 6주 처리
+  for (let week = 0; week < 6; week++) {
+    const weekStartDate = new Date(startDate);
+    weekStartDate.setDate(startDate.getDate() + week * 7);
+    weekStartDate.setHours(0, 0, 0, 0);
 
-      const timeA = a.startTime || a.time || '00:00';
-      const timeB = b.startTime || b.time || '00:00';
-      return timeA.localeCompare(timeB);
+    // 이번 주의 모든 종일 이벤트 수집
+    const weekAllDayEventsMap = new Map();
+
+    for (let day = 0; day < 7; day++) {
+      const date = new Date(weekStartDate);
+      date.setDate(weekStartDate.getDate() + day);
+      const dayEvents = getAllEventsForDate(date);
+
+      dayEvents.forEach((event) => {
+        if (event.time === '종일' || event.startTime === '종일') {
+          const key = `${event.title}_${event.date}_${event.endDate || event.date}`;
+
+          if (!weekAllDayEventsMap.has(key)) {
+            const eventStartDate = new Date(event.date + 'T00:00:00');
+            let eventEndDate;
+
+            if (event.endDate && event.endDate !== event.date) {
+              eventEndDate = new Date(event.endDate + 'T00:00:00');
+              eventEndDate.setDate(eventEndDate.getDate() - 1);
+            } else {
+              eventEndDate = new Date(event.date + 'T00:00:00');
+            }
+
+            const startDay = Math.round((eventStartDate - weekStartDate) / (1000 * 60 * 60 * 24));
+            const endDay = Math.round((eventEndDate - weekStartDate) / (1000 * 60 * 60 * 24));
+
+            weekAllDayEventsMap.set(key, {
+              ...event,
+              startDay: startDay,
+              endDay: endDay
+            });
+          }
+        }
+      });
+    }
+
+    const weekAllDayEvents = Array.from(weekAllDayEventsMap.values());
+
+    // 종일 이벤트 렌더링 (grid-column span 사용)
+    const allDayRow = week * 2 + 2; // 요일 헤더 다음부터
+    weekAllDayEvents.forEach((event) => {
+      const startDay = Math.max(0, event.startDay);
+      const endDay = Math.min(6, event.endDay);
+
+      if (startDay <= 6 && endDay >= 0 && startDay <= endDay) {
+        const bar = document.createElement('div');
+        bar.style.gridRow = `${allDayRow}`;
+        bar.style.gridColumn = `${startDay + 1} / ${endDay + 2}`;
+        bar.style.backgroundColor = event.color;
+        bar.style.borderRadius = '3px';
+        bar.style.fontSize = '10px';
+        bar.style.color = 'white';
+        bar.style.fontWeight = '500';
+        bar.style.overflow = 'hidden';
+        bar.style.textOverflow = 'ellipsis';
+        bar.style.whiteSpace = 'nowrap';
+        bar.style.cursor = 'pointer';
+        bar.style.padding = '2px 4px';
+        bar.style.margin = '1px';
+        bar.style.boxSizing = 'border-box';
+        bar.style.minHeight = '18px';
+        bar.textContent = event.title;
+        bar.title = `${event.title}\n시간: 종일 (${event.date} ~ ${event.endDate || event.date})\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
+
+        grid.appendChild(bar);
+      }
     });
 
-    dayEvents.forEach(event => {
-      const eventDiv = document.createElement('div');
-      eventDiv.className = 'event';
-      eventDiv.style.backgroundColor = event.color;
-      eventDiv.style.color = eventTextColor;
-      eventDiv.style.fontSize = eventFontSize;
-      eventDiv.textContent = event.title;
-      eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
-      cell.appendChild(eventDiv);
-    });
-    
-    grid.appendChild(cell);
+    // 날짜 셀 렌더링
+    const dateRow = week * 2 + 3;
+    for (let day = 0; day < 7; day++) {
+      const cellDate = new Date(weekStartDate);
+      cellDate.setDate(weekStartDate.getDate() + day);
+
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day';
+      cell.style.gridRow = `${dateRow}`;
+      cell.style.gridColumn = `${day + 1}`;
+      cell.style.minHeight = '100px';
+      cell.style.border = '1px solid #e0e0e0';
+      cell.style.padding = '4px';
+      cell.style.position = 'relative';
+
+      if (cellDate.getMonth() !== currentDate.getMonth()) {
+        cell.classList.add('other-month');
+      }
+
+      if (cellDate.toDateString() === today.toDateString()) {
+        cell.classList.add('today');
+      }
+
+      const dayNumber = document.createElement('div');
+      dayNumber.className = 'day-number';
+      dayNumber.textContent = cellDate.getDate();
+      cell.appendChild(dayNumber);
+
+      // 일반 이벤트만 표시 (종일 이벤트 제외)
+      const dayEvents = getAllEventsForDate(cellDate).filter(e => e.time !== '종일' && e.startTime !== '종일');
+
+      dayEvents.sort((a, b) => {
+        const timeA = a.startTime || a.time || '00:00';
+        const timeB = b.startTime || b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+      dayEvents.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'event';
+        eventDiv.style.backgroundColor = event.color;
+        eventDiv.style.color = eventTextColor;
+        eventDiv.style.fontSize = eventFontSize;
+        eventDiv.textContent = event.title;
+        eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
+        cell.appendChild(eventDiv);
+      });
+
+      grid.appendChild(cell);
+    }
   }
-  
+
   calendarContent.innerHTML = '';
   calendarContent.appendChild(grid);
 }
@@ -3069,8 +3159,10 @@ function renderDayView() {
       if (splitEvent.date !== dateString) return; // 날짜가 다르면 스킵
 
       if (splitEvent.time === '종일') {
-        // 종일 일정 수집
-        allDayEvents.push(event);
+        // 종일 일정 수집 (이미 있으면 추가하지 않음)
+        if (!allDayEvents.some(e => e.title === event.title && e.date === event.date)) {
+          allDayEvents.push(event);
+        }
       } else {
         const startHour = getEventHour(splitEvent.startTime);
         const endHour = getEventHour(splitEvent.endTime);
@@ -3420,9 +3512,23 @@ function getAllEventsForDate(date) {
     if (!calendar.visible || !calendar.events) return;
     if (activeCalendarIds.length > 0 && !activeCalendarIds.includes(calendar.id)) return;
 
-    // 당일 이벤트
+    // 당일 이벤트 + 멀티데이 종일 이벤트
     const events = calendar.events.filter(event => {
-      return event.date === dateString;
+      // 당일 시작 이벤트
+      if (event.date === dateString) return true;
+
+      // 종일 이벤트이고 날짜 범위에 포함되는지 확인
+      if (event.time === '종일' || event.startTime === '종일') {
+        if (event.endDate && event.endDate !== event.date) {
+          const eventStart = new Date(event.date + 'T00:00:00');
+          const eventEnd = new Date(event.endDate + 'T00:00:00');
+          eventEnd.setDate(eventEnd.getDate() - 1); // exclusive end를 inclusive로 변환
+          const checkDate = new Date(dateString + 'T00:00:00');
+          return checkDate >= eventStart && checkDate <= eventEnd;
+        }
+      }
+
+      return false;
     });
 
     // 전날 이벤트 중 6시 넘어가는 것들
