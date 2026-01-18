@@ -485,13 +485,12 @@
     margin-left: -2px;
     margin-right: -2px;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: #333;
     cursor: pointer;
     display: block;
     text-align: center;
-    white-space: normal;
-    word-break: keep-all;
-    line-height: 1.2;
   }
   
   /* 시간 기반 뷰 개선 */
@@ -2973,7 +2972,7 @@ function renderWeekView() {
                   //추가
           eventDiv.style.textAlign = 'center';
           eventDiv.style.wordWrap = 'break-word';
-          eventDiv.style.wordBreak = 'normal';
+          eventDiv.style.wordBreak = 'keep-all';
           eventDiv.style.lineHeight = '1.2';
           eventDiv.style.minHeight = '20px';     // 최소 높이 보장
           
