@@ -1765,6 +1765,7 @@ function parseIcalData(icalText) {
           uid: currentEvent.uid,
           title: currentEvent.summary,
           date: currentEvent.date,
+          endDate: currentEvent.endDate || currentEvent.date,
           start: currentEvent.date + 'T' + (currentEvent.startTime === '종일' ? '00:00:00' : currentEvent.startTime + ':00'),
           end: currentEvent.date + 'T' + (currentEvent.endTime === '종일' ? '23:59:59' : currentEvent.endTime + ':00'),
           time: currentEvent.time || '종일',
@@ -1831,6 +1832,7 @@ function parseIcalData(icalText) {
             const endDate = parseIcalDate(value);
             if (endDate) {
               currentEvent.endTime = endDate.time;
+              currentEvent.endDate = endDate.date;
             }
             break;
           case 'RRULE':
@@ -2739,10 +2741,6 @@ function renderWeekView() {
   }
 
   const weekAllDayEvents = Array.from(weekAllDayEventsMap.values());
-  console.log('Week all-day events:', weekAllDayEvents.length);
-  weekAllDayEvents.forEach(e => {
-    console.log(`Event: ${e.title}, startDay: ${e.startDay}, endDay: ${e.endDay}, date: ${e.date}, endDate: ${e.endDate}`);
-  });
 
   // 이벤트 렌더링
   for (let day = 0; day < 7; day++) {
