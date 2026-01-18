@@ -2533,7 +2533,6 @@ function renderMonthView() {
       cell.style.maxHeight = '100px';
       cell.style.border = '1px solid #e0e0e0';
       cell.style.padding = '4px';
-      cell.style.paddingTop = '24px'; // 날짜 번호 공간 확보
       cell.style.position = 'relative';
       cell.style.overflowY = 'auto';
       cell.style.overflowX = 'hidden';
@@ -2551,12 +2550,8 @@ function renderMonthView() {
       dayNumber.textContent = cellDate.getDate();
       dayNumber.style.position = 'sticky';
       dayNumber.style.top = '0';
-      dayNumber.style.left = '0';
       dayNumber.style.backgroundColor = 'white';
       dayNumber.style.zIndex = '1';
-      dayNumber.style.padding = '2px 4px';
-      dayNumber.style.marginTop = '-24px'; // paddingTop 만큼 올리기
-      dayNumber.style.marginBottom = '2px';
       cell.appendChild(dayNumber);
 
       // 일반 이벤트만 표시 (종일 이벤트 제외)
