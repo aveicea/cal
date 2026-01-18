@@ -1731,7 +1731,7 @@ async function loadNotionEvents(calendar) {
         }
       }
 
-      return {
+      const mappedEvent = {
         title: title,
         date: dateStr,
         endDate: endDateStr,
@@ -1742,6 +1742,13 @@ async function loadNotionEvents(calendar) {
         description: '',
         location: ''
       };
+      console.log('[Notion 캘린더 이벤트 매핑]', {
+        title: mappedEvent.title,
+        date: mappedEvent.date,
+        endDate: mappedEvent.endDate,
+        dateProp: dateProp?.date
+      });
+      return mappedEvent;
     }).filter(event => event.date !== null); // 날짜가 없는 항목 제외
 
     addDebugLog(`Notion 데이터베이스 로드 완료: ${calendar.events.length}개 이벤트`);
