@@ -2716,6 +2716,18 @@ function renderWeekView() {
           const startDay = Math.round((eventStartDate - weekStart) / (1000 * 60 * 60 * 24));
           const endDay = Math.round((eventEndDate - weekStart) / (1000 * 60 * 60 * 24));
 
+          console.log('[종일 이벤트 수집]', {
+            title: event.title,
+            date: event.date,
+            endDate: event.endDate,
+            eventStartDate: eventStartDate.toISOString(),
+            eventEndDate: eventEndDate.toISOString(),
+            weekStart: weekStart.toISOString(),
+            startDay,
+            endDay,
+            span: endDay - startDay + 1
+          });
+
           weekAllDayEventsMap.set(key, {
             ...event,
             startDay: startDay,
@@ -2861,6 +2873,16 @@ function renderWeekView() {
   weekAllDayEvents.forEach((event) => {
     const startDay = Math.max(0, event.startDay);
     const endDay = Math.min(6, event.endDay);
+
+    console.log('[종일 이벤트 렌더링]', {
+      title: event.title,
+      startDay: event.startDay,
+      endDay: event.endDay,
+      clampedStart: startDay,
+      clampedEnd: endDay,
+      gridColumn: `${startDay + 2} / ${endDay + 3}`,
+      willRender: startDay <= 6 && endDay >= 0 && startDay <= endDay
+    });
 
     // 이번 주에 표시할 부분이 있는지 확인
     if (startDay <= 6 && endDay >= 0 && startDay <= endDay) {
