@@ -972,6 +972,30 @@
   </div>
 </div>
 
+<!-- 시간표시선 설정 -->
+<div class="time-line-section">
+  <div class="toggle-header" onclick="toggleSection('timeLineContent', 'timeLineToggleIcon')">
+    <div class="color-picker-title">시간표시선 설정</div>
+    <div class="toggle-icon" id="timeLineToggleIcon">▼</div>
+  </div>
+  <div class="toggle-content" id="timeLineContent">
+    <div class="input-group">
+      <label>선 및 현재시간 색상</label>
+      <div class="color-input-row">
+        <input type="color" class="color-picker-input" id="timeLineColorPicker" onchange="updateTimeLineColorFromPicker()">
+        <input type="text" class="color-text-input" id="timeLineColorText" placeholder="#cc3333" oninput="updateTimeLineColorFromText()" maxlength="7">
+      </div>
+    </div>
+    <div class="input-group">
+      <label>다음 일정 라벨 색상</label>
+      <div class="color-input-row">
+        <input type="color" class="color-picker-input" id="nextEventColorPicker" onchange="updateNextEventColorFromPicker()">
+        <input type="text" class="color-text-input" id="nextEventColorText" placeholder="#333333" oninput="updateNextEventColorFromText()" maxlength="7">
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 연동된 캘린더 목록 -->
 <div class="calendar-list-section">
   <div class="toggle-header" onclick="toggleSection('calendarListContent', 'listToggleIcon')">
@@ -1133,6 +1157,10 @@ let textAlignHorizontal = 'center'; // 'left' or 'center'
 let textAlignVertical = 'center';   // 'top' or 'center'
 let eventTextColor = 'white';       // 'white' or 'black'
 let eventFontSize = '0.6em';        // 일정 글씨 크기
+
+// 시간표시선 색상 설정
+let timeLineColor = '#cc3333';      // 선 및 현재시간 라벨 색상
+let nextEventColor = '#333333';     // 다음 일정 라벨 색상
 
 
 // 캘린더 색상 팔레트
@@ -1359,6 +1387,47 @@ function updateColorFromText() {
   if (!color.startsWith('#')) color = '#' + color;
   if (/^#[0-9A-F]{6}$/i.test(color)) {
     setAccentColor(color);
+  }
+}
+
+// 시간표시선 색상 업데이트
+function updateTimeLineColorFromPicker() {
+  timeLineColor = document.getElementById('timeLineColorPicker').value;
+  document.getElementById('timeLineColorText').value = timeLineColor;
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`시간표시선 색상 변경: ${timeLineColor}`);
+}
+
+function updateTimeLineColorFromText() {
+  let color = document.getElementById('timeLineColorText').value.trim();
+  if (!color.startsWith('#')) color = '#' + color;
+  if (/^#[0-9A-F]{6}$/i.test(color)) {
+    timeLineColor = color;
+    document.getElementById('timeLineColorPicker').value = color;
+    saveToStorage();
+    renderCalendar();
+    addDebugLog(`시간표시선 색상 변경: ${timeLineColor}`);
+  }
+}
+
+function updateNextEventColorFromPicker() {
+  nextEventColor = document.getElementById('nextEventColorPicker').value;
+  document.getElementById('nextEventColorText').value = nextEventColor;
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`다음 일정 라벨 색상 변경: ${nextEventColor}`);
+}
+
+function updateNextEventColorFromText() {
+  let color = document.getElementById('nextEventColorText').value.trim();
+  if (!color.startsWith('#')) color = '#' + color;
+  if (/^#[0-9A-F]{6}$/i.test(color)) {
+    nextEventColor = color;
+    document.getElementById('nextEventColorPicker').value = color;
+    saveToStorage();
+    renderCalendar();
+    addDebugLog(`다음 일정 라벨 색상 변경: ${nextEventColor}`);
   }
 }
 
@@ -3335,7 +3404,7 @@ function renderDayView() {
     currentTimeLine.style.left = '1px';
     currentTimeLine.style.right = '1px';
     currentTimeLine.style.height = '2px';
-    currentTimeLine.style.backgroundColor = '#cc3333';
+    currentTimeLine.style.backgroundColor = timeLineColor;
     currentTimeLine.style.zIndex = '100';
     currentTimeLine.style.pointerEvents = 'none';
 
@@ -3346,7 +3415,7 @@ function renderDayView() {
     timeLabel.style.right = '4px';
     timeLabel.style.top = '-14px';
     timeLabel.style.fontSize = '9px';
-    timeLabel.style.color = '#cc3333';
+    timeLabel.style.color = timeLineColor;
     timeLabel.style.fontWeight = 'bold';
     timeLabel.style.pointerEvents = 'none';
     currentTimeLine.appendChild(timeLabel);
@@ -3358,7 +3427,7 @@ function renderDayView() {
     nextEventLabel.style.right = '4px';
     nextEventLabel.style.top = '6px';
     nextEventLabel.style.fontSize = '9px';
-    nextEventLabel.style.color = '#333';
+    nextEventLabel.style.color = nextEventColor;
     nextEventLabel.style.fontWeight = 'bold';
     nextEventLabel.style.pointerEvents = 'none';
     currentTimeLine.appendChild(nextEventLabel);
@@ -3792,6 +3861,8 @@ function saveToStorage() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      timeLineColor: timeLineColor,
+      nextEventColor: nextEventColor,
       calendars: calendars.map(cal => ({
         ...cal,
         events: cal.events || []
@@ -3982,6 +4053,8 @@ function loadFromStorage() {
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
       eventFontSize = parsed.eventFontSize || '0.6em';
+      timeLineColor = parsed.timeLineColor || '#cc3333';
+      nextEventColor = parsed.nextEventColor || '#333333';
       calendars = parsed.calendars || [];
 
       // 저장된 캘린더들을 뷰 설정에 자동으로 추가 (없는 경우)
@@ -4002,6 +4075,10 @@ function loadFromStorage() {
       document.getElementById('textAlignVertical').value = textAlignVertical;
       document.getElementById('eventTextColor').value = eventTextColor;
       document.getElementById('eventFontSize').value = eventFontSize;
+      document.getElementById('timeLineColorPicker').value = timeLineColor;
+      document.getElementById('timeLineColorText').value = timeLineColor;
+      document.getElementById('nextEventColorPicker').value = nextEventColor;
+      document.getElementById('nextEventColorText').value = nextEventColor;
       document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(currentView + 'Btn').classList.add('active');
       
