@@ -2623,7 +2623,7 @@ function renderMonthView() {
       dayNumber.textContent = cellDate.getDate();
       dayNumber.style.position = 'sticky';
       dayNumber.style.top = '0';
-      dayNumber.style.backgroundColor = isOtherMonth ? '#f8f9fa' : 'white';
+      dayNumber.style.backgroundColor = isToday ? accentColor : (isOtherMonth ? '#f8f9fa' : 'white');
       dayNumber.style.zIndex = '10';
       dayNumber.style.padding = '2px 0';
       dayNumber.style.marginBottom = '2px';
