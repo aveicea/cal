@@ -3371,15 +3371,16 @@ function renderDayView() {
       const slotIndex = getSlotIndex(hours);
       const minuteOffset = minutes / 60;
 
-      const position = (slotIndex + minuteOffset) * 24 + 30; // 24px per slot + 30px header
+      // 헤더(30px) + 종일 이벤트 행(18px) + 슬롯 위치(24px per slot)
+      const position = (slotIndex + minuteOffset) * 24 + 48;
       currentTimeLine.style.top = position + 'px';
 
       // 현재 시간 표시
       timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-      // 진행 중인 일정 또는 다음 일정 찾기 (일간뷰에 표시된 캘린더의 이벤트만)
+      // 진행 중인 일정 또는 다음 일정 찾기 (종일 일정 제외)
       const currentTimeInMinutes = hours * 60 + minutes;
-      const dayEvents = getAllEventsForDate(currentDate);
+      const dayEvents = getAllEventsForDate(currentDate).filter(e => e.time !== '종일' && e.startTime !== '종일');
 
       let ongoingEvent = null;
       let nextEvent = null;
@@ -3389,13 +3390,13 @@ function renderDayView() {
         const startTime = event.startTime || event.time;
         const endTime = event.endTime;
 
-        if (startTime && startTime !== '종일') {
+        if (startTime) {
           const startHour = getEventHour(startTime);
           const startMinute = getEventMinute(startTime);
           const startTimeInMinutes = startHour * 60 + startMinute;
 
           // 종료 시간 확인
-          if (endTime && endTime !== '종일') {
+          if (endTime) {
             const endHour = getEventHour(endTime);
             const endMinute = getEventMinute(endTime);
             let endTimeInMinutes = endHour * 60 + endMinute;
