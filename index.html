@@ -2812,6 +2812,13 @@ function renderWeekView() {
   const dayHeaders = [];
 
   // 요일 헤더
+  // 0-5시 조정을 위한 "오늘" 계산
+  const adjustedToday = new Date();
+  const nowHour = adjustedToday.getHours();
+  if (nowHour < 6) {
+    adjustedToday.setDate(adjustedToday.getDate() - 1);
+  }
+
   for (let i = 0; i < 7; i++) {
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate() + i);
@@ -2826,7 +2833,7 @@ function renderWeekView() {
     header.style.textAlign = 'center';
     header.style.position = 'relative'; // 배지 위치 기준점
 
-    if (date.toDateString() === (new Date()).toDateString()) {
+    if (date.toDateString() === adjustedToday.toDateString()) {
       header.style.backgroundColor = accentColor;
     }
 
