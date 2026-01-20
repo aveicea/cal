@@ -3047,7 +3047,7 @@ function renderWeekView() {
           eventDiv.style.justifyContent = textAlignVertical === 'top' ? 'flex-start' : 'center';
                   //추가
           eventDiv.style.textAlign = 'center';
-          eventDiv.style.wordWrap = 'break-word';
+          eventDiv.style.overflowWrap = 'break-word';
           eventDiv.style.wordBreak = 'keep-all';
           eventDiv.style.lineHeight = '1.2';
           eventDiv.style.minHeight = '20px';     // 최소 높이 보장
@@ -3338,8 +3338,8 @@ function renderDayView() {
         eventDiv.style.zIndex = 100 + currentEventIndex;
         //추가
         eventDiv.style.textAlign = 'center';
-        eventDiv.style.wordWrap = 'break-word';
-        eventDiv.style.wordBreak = 'normal';
+        eventDiv.style.overflowWrap = 'break-word';
+        eventDiv.style.wordBreak = 'keep-all';
         eventDiv.style.lineHeight = '1.2';
         eventDiv.style.minHeight = '20px';     // 최소 높이 보장
 
