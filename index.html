@@ -2793,15 +2793,9 @@ function splitCrossDayEvent(event) {
 
 // 주간 뷰 렌더링 (24시간 버전)
 function renderWeekView() {
+  // currentDate는 이미 0-6시 조정 완료 상태 (일간 뷰와 동일하게 처리)
   const startOfWeek = new Date(currentDate);
-  const hour = new Date().getHours();
-  
-  // 0-6시면 주간 뷰 시작일 조정
-  if (hour < 6) {
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
-  } else {
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-  }
+  startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
 
   const container = document.createElement('div');
   container.style.padding = '0 0 10px 0';
@@ -2830,11 +2824,9 @@ function renderWeekView() {
   // 요일 헤더 저장용 배열
   const dayHeaders = [];
 
-  // 요일 헤더
-  // 0-5시 조정을 위한 "오늘" 계산
+  // 요일 헤더 - "오늘" 표시용 (currentDate가 이미 0-6시 조정 완료)
   const adjustedToday = new Date();
-  const nowHour = adjustedToday.getHours();
-  if (nowHour < 6) {
+  if (adjustedToday.getHours() < 6) {
     adjustedToday.setDate(adjustedToday.getDate() - 1);
   }
 
