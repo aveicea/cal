@@ -1466,7 +1466,7 @@ async function loadCalendarEvents(calendar) {
 // iCal 이벤트 로드
 async function loadIcalEvents(calendar) {
   // 자체 프록시 서버를 최우선 사용 (공용 프록시 차단 대응)
-  const selfProxyUrl = '/api/ical';
+  const selfProxyUrl = 'https://cal-one-tau.vercel.app/api/ical';
 
   // 1단계: 자체 프록시 시도
   try {
@@ -1752,7 +1752,7 @@ async function loadNotionEvents(calendar) {
   const titleProperty = calendar.notionTitleProperty;
 
   // Vercel 프록시 서버 URL (배포 후 여기를 실제 URL로 변경)
-  const proxyUrl = '/api/notion';
+  const proxyUrl = 'https://cal-one-tau.vercel.app/api/notion';
 
   try {
     addDebugLog(`Notion API 호출 시작`);
