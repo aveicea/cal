@@ -3082,7 +3082,8 @@ function renderWeekView() {
           eventDiv.style.left = `${leftPosition}%`;
           eventDiv.style.width = `${eventWidth}%`;
 
-          eventDiv.textContent = splitEvent.title;
+          // 다음날로 넘어가는 이벤트의 둘째 날 부분은 제목 숨김 (주간뷰)
+          eventDiv.textContent = splitEvent.isSecondPart ? '' : splitEvent.title;
           eventDiv.title = `${event.title}\n시간: ${formatEventTimeInfo(event)}\n캘린더: ${event.calendarName}${event.location ? '\n위치: ' + event.location : ''}${event.description && event.description !== 'This is an event reminder' ? '\n설명: ' + event.description : ''}`;
           // 시작 슬롯의 셀에 추가
           if (dayCells[day][startSlot]) {
