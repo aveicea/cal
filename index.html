@@ -986,6 +986,13 @@
   </div>
   <div class="toggle-content" id="timeLineContent">
     <div class="input-group">
+      <label>시간표시선 표시</label>
+      <select id="timeLineVisible" onchange="updateTimeLineVisible()">
+        <option value="true">켜기</option>
+        <option value="false">끄기</option>
+      </select>
+    </div>
+    <div class="input-group">
       <label>선 및 현재시간 색상</label>
       <div class="color-input-row">
         <input type="color" class="color-picker-input" id="timeLineColorPicker" onchange="updateTimeLineColorFromPicker()">
@@ -1164,7 +1171,8 @@ let textAlignVertical = 'center';   // 'top' or 'center'
 let eventTextColor = 'white';       // 'white' or 'black'
 let eventFontSize = '0.6em';        // 일정 글씨 크기
 
-// 시간표시선 색상 설정
+// 시간표시선 설정
+let timeLineVisible = true;         // 시간표시선 표시 여부
 let timeLineColor = '#cc3333';      // 선 및 현재시간 라벨 색상
 let nextEventColor = '#333333';     // 다음 일정 라벨 색상
 
@@ -1394,6 +1402,14 @@ function updateColorFromText() {
   if (/^#[0-9A-F]{6}$/i.test(color)) {
     setAccentColor(color);
   }
+}
+
+// 시간표시선 표시 토글
+function updateTimeLineVisible() {
+  timeLineVisible = document.getElementById('timeLineVisible').value === 'true';
+  saveToStorage();
+  renderCalendar();
+  addDebugLog(`시간표시선 표시: ${timeLineVisible ? '켜기' : '끄기'}`);
 }
 
 // 시간표시선 색상 업데이트
@@ -3407,7 +3423,7 @@ function renderDayView() {
     }
   }
 
-  // 현재 시간 선 추가 (오늘 날짜일 때만, 6시 기준 고려)
+  // 현재 시간 선 추가 (오늘 날짜일 때만, 6시 기준 고려, 표시 설정 확인)
   const now = new Date();
   const nowHour = now.getHours();
   const adjustedToday = new Date();
@@ -3415,7 +3431,7 @@ function renderDayView() {
     adjustedToday.setDate(adjustedToday.getDate() - 1);
   }
 
-  if (currentDate.toDateString() === adjustedToday.toDateString()) {
+  if (timeLineVisible && currentDate.toDateString() === adjustedToday.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
     currentTimeLine.style.gridColumn = '2'; // 이벤트 칸에만 표시
@@ -3880,6 +3896,7 @@ function saveToStorage() {
       textAlignVertical: textAlignVertical,
       eventTextColor: eventTextColor,
       eventFontSize: eventFontSize,
+      timeLineVisible: timeLineVisible,
       timeLineColor: timeLineColor,
       nextEventColor: nextEventColor,
       calendars: calendars.map(cal => ({
@@ -4072,6 +4089,7 @@ function loadFromStorage() {
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
       eventFontSize = parsed.eventFontSize || '0.6em';
+      timeLineVisible = parsed.timeLineVisible !== undefined ? parsed.timeLineVisible : true;
       timeLineColor = parsed.timeLineColor || '#cc3333';
       nextEventColor = parsed.nextEventColor || '#333333';
       calendars = parsed.calendars || [];
@@ -4094,6 +4112,7 @@ function loadFromStorage() {
       document.getElementById('textAlignVertical').value = textAlignVertical;
       document.getElementById('eventTextColor').value = eventTextColor;
       document.getElementById('eventFontSize').value = eventFontSize;
+      document.getElementById('timeLineVisible').value = String(timeLineVisible);
       document.getElementById('timeLineColorPicker').value = timeLineColor;
       document.getElementById('timeLineColorText').value = timeLineColor;
       document.getElementById('nextEventColorPicker').value = nextEventColor;
