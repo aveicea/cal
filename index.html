@@ -988,8 +988,10 @@
     <div class="input-group">
       <label>시간표시선 표시</label>
       <select id="timeLineVisible" onchange="updateTimeLineVisible()">
-        <option value="true">켜기</option>
-        <option value="false">끄기</option>
+        <option value="all">전체 표시</option>
+        <option value="line+time">선 + 현재시간</option>
+        <option value="line">선만 표시</option>
+        <option value="off">끄기</option>
       </select>
     </div>
     <div class="input-group">
@@ -1172,7 +1174,7 @@ let eventTextColor = 'white';       // 'white' or 'black'
 let eventFontSize = '0.6em';        // 일정 글씨 크기
 
 // 시간표시선 설정
-let timeLineVisible = true;         // 시간표시선 표시 여부
+let timeLineVisible = 'all';        // 시간표시선 표시 모드: all, line+time, line, off
 let timeLineColor = '#cc3333';      // 선 및 현재시간 라벨 색상
 let nextEventColor = '#333333';     // 다음 일정 라벨 색상
 
@@ -1406,10 +1408,10 @@ function updateColorFromText() {
 
 // 시간표시선 표시 토글
 function updateTimeLineVisible() {
-  timeLineVisible = document.getElementById('timeLineVisible').value === 'true';
+  timeLineVisible = document.getElementById('timeLineVisible').value;
   saveToStorage();
   renderCalendar();
-  addDebugLog(`시간표시선 표시: ${timeLineVisible ? '켜기' : '끄기'}`);
+  addDebugLog(`시간표시선 표시: ${timeLineVisible}`);
 }
 
 // 시간표시선 색상 업데이트
@@ -3431,7 +3433,7 @@ function renderDayView() {
     adjustedToday.setDate(adjustedToday.getDate() - 1);
   }
 
-  if (timeLineVisible && currentDate.toDateString() === adjustedToday.toDateString()) {
+  if (timeLineVisible !== 'off' && currentDate.toDateString() === adjustedToday.toDateString()) {
     const currentTimeLine = document.createElement('div');
     currentTimeLine.id = 'current-time-line';
     currentTimeLine.style.gridColumn = '2'; // 이벤트 칸에만 표시
@@ -3453,6 +3455,10 @@ function renderDayView() {
     timeLabel.style.color = timeLineColor;
     timeLabel.style.fontWeight = 'bold';
     timeLabel.style.pointerEvents = 'none';
+    // line 모드면 시간 라벨 숨김
+    if (timeLineVisible === 'line') {
+      timeLabel.style.display = 'none';
+    }
     currentTimeLine.appendChild(timeLabel);
 
     // 다음 일정까지 남은 시간 표시 라벨 (선 아래)
@@ -3465,6 +3471,10 @@ function renderDayView() {
     nextEventLabel.style.color = nextEventColor;
     nextEventLabel.style.fontWeight = 'bold';
     nextEventLabel.style.pointerEvents = 'none';
+    // line, line+time 모드면 다음 일정 라벨 숨김
+    if (timeLineVisible === 'line' || timeLineVisible === 'line+time') {
+      nextEventLabel.style.display = 'none';
+    }
     currentTimeLine.appendChild(nextEventLabel);
 
     // 현재 시간 업데이트 함수
@@ -4089,7 +4099,10 @@ function loadFromStorage() {
       textAlignVertical = parsed.textAlignVertical || 'center';
       eventTextColor = parsed.eventTextColor || 'white';
       eventFontSize = parsed.eventFontSize || '0.6em';
-      timeLineVisible = parsed.timeLineVisible !== undefined ? parsed.timeLineVisible : true;
+      // 이전 boolean 값 호환 처리
+      if (parsed.timeLineVisible === true) timeLineVisible = 'all';
+      else if (parsed.timeLineVisible === false) timeLineVisible = 'off';
+      else timeLineVisible = parsed.timeLineVisible || 'all';
       timeLineColor = parsed.timeLineColor || '#cc3333';
       nextEventColor = parsed.nextEventColor || '#333333';
       calendars = parsed.calendars || [];
