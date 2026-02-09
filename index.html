@@ -988,9 +988,9 @@
     <div class="input-group">
       <label>시간표시선 표시</label>
       <select id="timeLineVisible" onchange="updateTimeLineVisible()">
-        <option value="all">전체 표시</option>
+        <option value="all">선 + 현재시간 + 다음일정</option>
         <option value="line+time">선 + 현재시간</option>
-        <option value="line">선만 표시</option>
+        <option value="line">선</option>
         <option value="off">끄기</option>
       </select>
     </div>
@@ -3455,10 +3455,6 @@ function renderDayView() {
     timeLabel.style.color = timeLineColor;
     timeLabel.style.fontWeight = 'bold';
     timeLabel.style.pointerEvents = 'none';
-    // line 모드면 시간 라벨 숨김
-    if (timeLineVisible === 'line') {
-      timeLabel.style.display = 'none';
-    }
     currentTimeLine.appendChild(timeLabel);
 
     // 다음 일정까지 남은 시간 표시 라벨 (선 아래)
@@ -3471,10 +3467,6 @@ function renderDayView() {
     nextEventLabel.style.color = nextEventColor;
     nextEventLabel.style.fontWeight = 'bold';
     nextEventLabel.style.pointerEvents = 'none';
-    // line, line+time 모드면 다음 일정 라벨 숨김
-    if (timeLineVisible === 'line' || timeLineVisible === 'line+time') {
-      nextEventLabel.style.display = 'none';
-    }
     currentTimeLine.appendChild(nextEventLabel);
 
     // 현재 시간 업데이트 함수
@@ -3489,8 +3481,9 @@ function renderDayView() {
       const position = (slotIndex + minuteOffset) * 24 + 48;
       currentTimeLine.style.top = position + 'px';
 
-      // 현재 시간 표시
+      // 현재 시간 표시 (line 모드면 숨김)
       timeLabel.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      timeLabel.style.display = (timeLineVisible === 'line') ? 'none' : 'block';
 
       // 진행 중인 일정 또는 다음 일정 찾기 (종일 일정 제외)
       const currentTimeInMinutes = hours * 60 + minutes;
@@ -3539,25 +3532,26 @@ function renderDayView() {
       });
 
       // 진행 중인 일정이 있으면 종료까지 남은 시간 표시
+      const showNextEvent = (timeLineVisible === 'all');
       if (ongoingEvent) {
         const timeDiff = ongoingEvent.endTimeInMinutes - currentTimeInMinutes;
         const hoursUntil = Math.floor(timeDiff / 60);
         const minutesUntil = timeDiff % 60;
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
         nextEventLabel.title = `진행 중: ${ongoingEvent.summary}`;
-        nextEventLabel.style.display = 'block';
+        nextEventLabel.style.display = showNextEvent ? 'block' : 'none';
       } else if (nextEvent) {
         // 진행 중인 일정이 없으면 다음 일정까지 시간 표시
         const hoursUntil = Math.floor(minTimeDiff / 60);
         const minutesUntil = minTimeDiff % 60;
         nextEventLabel.textContent = `-${hoursUntil.toString().padStart(2, '0')}:${minutesUntil.toString().padStart(2, '0')}`;
         nextEventLabel.title = `다음 일정: ${nextEvent.summary}`;
-        nextEventLabel.style.display = 'block';
+        nextEventLabel.style.display = showNextEvent ? 'block' : 'none';
       } else {
         // 진행 중인 일정도 다음 일정도 없으면 Free
         nextEventLabel.textContent = 'Free';
         nextEventLabel.title = '';
-        nextEventLabel.style.display = 'block';
+        nextEventLabel.style.display = showNextEvent ? 'block' : 'none';
       }
     };
 
